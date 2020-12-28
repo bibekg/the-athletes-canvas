@@ -143,11 +143,9 @@ export const MapViewer = ({ activities }: Props) => {
         borderRight={`1px solid ${colors.africanElephant}`}
       >
         <Box p={3} bg="white">
-          <Text.SectionHeader color={colors.nomusBlue}>
-            Strava Activities Visualizer
-          </Text.SectionHeader>
+          <Text.SectionHeader color={colors.nomusBlue}>Activity Map Visualizer</Text.SectionHeader>
           <Text.Body3>
-            Use this tool to create a minimalist map of your Strava activities routes. You can then
+            Use this tool to create a minimalist map of the routes of your activities. You can then
             right-click and save the visualization to a PNG.
           </Text.Body3>
         </Box>

@@ -9,6 +9,9 @@ import { SummaryActivity } from "types/strava";
 import Image from "components/Image";
 import { colors } from "styles";
 
+const stravaOauthURL =
+  "https://www.strava.com/oauth/authorize?client_id=58724&redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Fapi%2Fauth%2Fstrava-callback&response_type=code&scope=activity%3Aread_all";
+
 export default function App() {
   const [unuathorized, setUnauthorized] = React.useState(false);
   const [activities, setActivities] = React.useState<Array<SummaryActivity> | null>(null);
@@ -55,7 +58,7 @@ export default function App() {
           justifyContent="center"
         >
           <Text.PageHeader color={colors.nomusBlue}>Activity Map Visualizer</Text.PageHeader>
-          <a href="/api/auth/login">
+          <a href={stravaOauthURL}>
             <Image role="button" src="/images/connect-with-strava-button.svg" />
           </a>
         </Box>
