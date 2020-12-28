@@ -1,53 +1,37 @@
+import * as Text from "components/Text";
 import Head from "next/head";
 import { css, Global } from "@emotion/react";
 import React from "react";
-import { Route } from "components/RouteMap";
 import { MapViewer } from "components/MapViewer";
-import polyline from "@mapbox/polyline";
+import Spinner from "components/Spinner";
+import Box from "components/Box";
+import { SummaryActivity } from "types/strava";
+import Image from "components/Image";
+import { colors } from "styles";
 
 export default function App() {
-  const [routes, setRoutes] = React.useState<Array<Route> | null>(null);
+  const [unuathorized, setUnauthorized] = React.useState(false);
+  const [activities, setActivities] = React.useState<Array<SummaryActivity> | null>(null);
 
   React.useEffect(() => {
-    const getRoutesFromStrava = async () => {
+    const tryToFetchActivities = async () => {
       const result = await fetch("/api/strava/activities");
-      if (result.status === 401) {
-        window.location.replace("/api/auth/login");
+      if (result.ok) {
+        const data = await result.json();
+        if (data?.activities) {
+          setActivities(data.activities);
+        }
+      } else {
+        setUnauthorized(true);
       }
-      const data = await result.json();
-      const _routes = data.activities
-        .map((act: any) => {
-          if (act.map.summary_polyline == null) {
-            console.log("skipping due to missing summary_polyline");
-            return null;
-          }
-
-          try {
-            const decodedPolyline = polyline.decode(act.map.summary_polyline);
-            const waypoints = decodedPolyline.map(([lat, lon]) => ({
-              lat,
-              lon,
-            }));
-            return {
-              id: act.id,
-              waypoints,
-            };
-          } catch (err) {
-            console.log(err);
-            return null;
-          }
-        })
-        .filter(Boolean);
-      console.log({ _routes });
-      setRoutes(_routes);
     };
-    getRoutesFromStrava();
+    tryToFetchActivities();
   }, []);
 
   return (
     <>
       <Head>
-        <title>Strava Activity Visualizer</title>
+        <title>Activity Map Visualizer</title>
       </Head>
       <Global
         styles={css`
@@ -59,7 +43,36 @@ export default function App() {
           }
         `}
       />
-      {routes ? <MapViewer routes={routes} /> : null}
+      {activities && <MapViewer activities={activities} />}
+
+      {unuathorized && (
+        <Box
+          width="100vw"
+          height="100vh"
+          display="flex"
+          flexDirection="column"
+          alignItems="center"
+          justifyContent="center"
+        >
+          <Text.PageHeader color={colors.nomusBlue}>Activity Map Visualizer</Text.PageHeader>
+          <a href="/api/auth/login">
+            <Image role="button" src="/images/connect-with-strava-button.svg" />
+          </a>
+        </Box>
+      )}
+
+      {!unuathorized && !activities && (
+        <Box
+          width="100vw"
+          height="100vh"
+          display="flex"
+          flexDirection="column"
+          alignItems="center"
+          justifyContent="center"
+        >
+          <Spinner />
+        </Box>
+      )}
     </>
   );
 }

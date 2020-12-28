@@ -204,8 +204,13 @@ export const RouteMap = ({
     }
   };
 
-  // Add the route/waypoints if routes has changed
+  // Re-render the routes if props have changed
   React.useEffect(() => {
+    // Cancel all animation frames since the props may have changed mid-animation
+    for (var i = 1; i < 99999; i++) {
+      window.clearInterval(i);
+      window.cancelAnimationFrame(i);
+    }
     renderRoutes(routes);
   }, [routes, thickness, geoBounds, mapResolution, pathResolution, bgColor, pathColor]);
 

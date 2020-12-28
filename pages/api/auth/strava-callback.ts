@@ -27,11 +27,13 @@ export default createHandler(async (req, res) => {
   if (response == null || response.data == null) {
     return res.status(500).end();
   }
-  const { access_token, refresh_token, athlete } = response.data;
+  const { access_token, refresh_token, athlete, expires_at } = response.data;
 
   const cookies = new Cookies(req, res);
   cookies.set("X-Access-Token", access_token, { httpOnly: true });
   cookies.set("X-Refresh-Token", refresh_token, { httpOnly: true });
+
+  cookies.set("'X-Access-Token-Expires-At'", expires_at);
   cookies.set("X-Strava-Athlete-ID", athlete.id);
   res.status(307).redirect("/");
 });
