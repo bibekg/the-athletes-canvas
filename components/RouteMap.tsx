@@ -46,7 +46,7 @@ const coordinatesToBoundedCanvasPoint = (
   return { x, y };
 };
 
-export type Waypoint = any;
+export type Waypoint = Coords;
 
 export type Route = {
   id: any;
@@ -66,14 +66,36 @@ export interface Props {
   canvasStyles?: SerializedStyles;
 }
 
+// Determine the GeoBounds that will contain all the routes with a small padding (5%)
+const getGeoBoundsForRoutes = (routes: Array<Route>): GeoBounds => {
+  let minLat = 90;
+  let maxLat = -90;
+  let minLon = 180;
+  let maxLon = -180;
+  routes.forEach((route) => {
+    route.waypoints.forEach((waypoint) => {
+      minLat = Math.min(waypoint.lat, minLat);
+      maxLat = Math.max(waypoint.lat, maxLat);
+      (minLon = Math.min(waypoint.lon, minLon)), (maxLon = Math.max(waypoint.lon, maxLon));
+    });
+  });
+
+  const latRange = Math.abs(maxLat - minLat);
+  const lonRange = Math.abs(maxLon - minLon);
+  const latBuffer = 0.05 * latRange;
+  const lonBuffer = 0.05 * lonRange;
+
+  return {
+    leftLon: minLon - lonBuffer,
+    rightLon: maxLon + lonBuffer,
+    upperLat: maxLat + latBuffer,
+    lowerLat: minLat - latBuffer,
+  };
+};
+
 export const RouteMap = ({
   routes,
-  geoBounds = {
-    leftLon: -180,
-    rightLon: 180,
-    upperLat: 90,
-    lowerLat: -90,
-  },
+  geoBounds = getGeoBoundsForRoutes(routes),
   pathResolution = 1,
   duration = 750,
   thickness = 1,

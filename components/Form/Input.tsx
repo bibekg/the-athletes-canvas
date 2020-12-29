@@ -47,6 +47,9 @@ const Input = styled("input")<InputProps>(
     "&::placeholder": {
       color: theme.colors.africanElephant,
     },
+    "&:disabled": {
+      backgroundColor: theme.colors.superlightGray,
+    },
   },
   space,
   position,

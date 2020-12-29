@@ -22,6 +22,7 @@ interface ActivityFilteringOptions {
   activityTypes: Array<ActivityType>;
 }
 interface VisualizationOptions extends GeoBounds {
+  useCustomCoords: boolean;
   thickness: number;
   duration: number;
   mapResolution: number;
@@ -66,10 +67,11 @@ export const MapViewer = ({ activities }: Props) => {
     pathResolution: 0.5,
     bgColor: { r: 0, g: 0, b: 0, a: 1 },
     pathColor: { r: 255, g: 255, b: 255, a: 0.2 },
-    leftLon: -122.7,
-    rightLon: -121.7,
+    useCustomCoords: false,
+    leftLon: -122,
+    rightLon: -121,
     upperLat: 38,
-    lowerLat: 37.46,
+    lowerLat: 37,
   };
   const [mode, setMode] = React.useState<"routes" | "visualization">("routes");
   const { register, watch, control, handleSubmit } = useForm<CustomizationOptions>({
@@ -105,12 +107,14 @@ export const MapViewer = ({ activities }: Props) => {
         )
         .filter(Boolean),
       duration: options.duration,
-      geoBounds: {
-        leftLon: options.leftLon,
-        rightLon: options.rightLon,
-        upperLat: options.upperLat,
-        lowerLat: options.lowerLat,
-      },
+      geoBounds: options.useCustomCoords
+        ? {
+            leftLon: options.leftLon,
+            rightLon: options.rightLon,
+            upperLat: options.upperLat,
+            lowerLat: options.lowerLat,
+          }
+        : undefined,
       thickness: options.thickness,
       pathResolution: options.pathResolution,
       mapResolution: options.mapResolution,
@@ -143,10 +147,12 @@ export const MapViewer = ({ activities }: Props) => {
         borderRight={`1px solid ${colors.africanElephant}`}
       >
         <Box p={3} bg="white">
-          <Text.SectionHeader color={colors.nomusBlue}>Activity Map Visualizer</Text.SectionHeader>
+          <Text.SectionHeader color={colors.nomusBlue}>
+            Minimalist Activity Heatmap
+          </Text.SectionHeader>
           <Text.Body3>
-            Use this tool to create a minimalist map of the routes of your activities. You can then
-            right-click and save the visualization to a PNG.
+            Create a minimalist heatmap of your activities. After tweaking the visualization to your
+            preferences, you can right-click and save it to a PNG.
           </Text.Body3>
         </Box>
         {activities == null && {}}
@@ -228,6 +234,7 @@ export const MapViewer = ({ activities }: Props) => {
                   "duration thickness"
                   "mapResolution pathResolution"
                   "bgColor pathColor"
+                  "useCustomCoords useCustomCoords"
                   "leftLon rightLon"
                   "upperLat lowerLat"
                 `}
@@ -313,6 +320,15 @@ export const MapViewer = ({ activities }: Props) => {
                 />
               </Form.Item>
 
+              <Form.Item gridArea="useCustomCoords">
+                <Form.Label>Use custom coordinate bounds?</Form.Label>
+                <Text.Body3>
+                  By default, the coordinate bounds are automatically determined to fit the selected
+                  activities. If you'd like, you can override the bounds yourself.
+                </Text.Body3>
+                <Form.Input name="useCustomCoords" type="checkbox" ref={register()} />
+              </Form.Item>
+
               <Form.Item gridArea="leftLon">
                 <Form.Label>Left Longituide</Form.Label>
                 <Form.Input
@@ -322,6 +338,7 @@ export const MapViewer = ({ activities }: Props) => {
                   min={-180}
                   max={values.rightLon}
                   step="any"
+                  disabled={!values.useCustomCoords}
                 />
               </Form.Item>
               <Form.Item gridArea="rightLon">
@@ -333,6 +350,7 @@ export const MapViewer = ({ activities }: Props) => {
                   min={values.leftLon}
                   max={180}
                   step="any"
+                  disabled={!values.useCustomCoords}
                 />
               </Form.Item>
               <Form.Item gridArea="upperLat">
@@ -344,6 +362,7 @@ export const MapViewer = ({ activities }: Props) => {
                   min={values.lowerLat}
                   max={90}
                   step="any"
+                  disabled={!values.useCustomCoords}
                 />
               </Form.Item>
               <Form.Item gridArea="lowerLat">
@@ -355,6 +374,7 @@ export const MapViewer = ({ activities }: Props) => {
                   min={-90}
                   max={values.upperLat}
                   step="any"
+                  disabled={!values.useCustomCoords}
                 />
               </Form.Item>
             </Box>
