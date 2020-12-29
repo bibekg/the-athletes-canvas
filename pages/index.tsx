@@ -9,8 +9,17 @@ import { SummaryActivity } from "types/strava";
 import Image from "components/Image";
 import { colors } from "styles";
 
-const stravaOauthURL =
-  "https://www.strava.com/oauth/authorize?client_id=58724&redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Fapi%2Fauth%2Fstrava-callback&response_type=code&scope=activity%3Aread_all";
+const baseUrl =
+  process.env.NODE_ENV === "production"
+    ? "https://athlete-canvas.vercel.app"
+    : "http://localhost:3000";
+
+const stravaOauthUrlParams = new URLSearchParams();
+stravaOauthUrlParams.set("client_id", "58724");
+stravaOauthUrlParams.set("redirect_uri", baseUrl + "/api/auth/strava-callback");
+stravaOauthUrlParams.set("response_type", "code");
+stravaOauthUrlParams.set("scope", "activity:read_all");
+const stravaOauthURL = `https://www.strava.com/oauth/authorize?${stravaOauthUrlParams.toString()}`;
 
 export default function App() {
   const [unuathorized, setUnauthorized] = React.useState(false);
@@ -34,7 +43,7 @@ export default function App() {
   return (
     <>
       <Head>
-        <title>Activity Map Visualizer</title>
+        <title>The Athlete's Canvas</title>
       </Head>
       <Global
         styles={css`
@@ -57,7 +66,7 @@ export default function App() {
           alignItems="center"
           justifyContent="center"
         >
-          <Text.PageHeader color={colors.nomusBlue}>Activity Map Visualizer</Text.PageHeader>
+          <Text.PageHeader color={colors.nomusBlue}>The Athlete's Canvas</Text.PageHeader>
           <a href={stravaOauthURL}>
             <Image role="button" src="/images/connect-with-strava-button.svg" />
           </a>

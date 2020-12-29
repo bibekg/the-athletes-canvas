@@ -147,9 +147,7 @@ export const MapViewer = ({ activities }: Props) => {
         borderRight={`1px solid ${colors.africanElephant}`}
       >
         <Box p={3} bg="white">
-          <Text.SectionHeader color={colors.nomusBlue}>
-            Minimalist Activity Heatmap
-          </Text.SectionHeader>
+          <Text.SectionHeader color={colors.nomusBlue}>The Athlete's Canvas</Text.SectionHeader>
           <Text.Body3>
             Create a minimalist heatmap of your activities. After tweaking the visualization to your
             preferences, you can right-click and save it to a PNG.
