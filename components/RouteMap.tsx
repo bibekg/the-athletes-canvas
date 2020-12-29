@@ -247,7 +247,6 @@ export const RouteMap = ({
 
   return (
     <canvas
-      // @ts-ignore
       css={css(canvasStyles)}
       ref={canvasRef}
       width={effectiveWidth}
