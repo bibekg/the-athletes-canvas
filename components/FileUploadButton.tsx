@@ -2,11 +2,16 @@ import { css } from "@emotion/react";
 import styled from "@emotion/styled";
 import * as React from "react";
 import * as Text from "components/Text";
+import * as SVG from "components/SVG";
 import Box from "./Box";
 import Image from "./Image";
 import Button from "./Button";
-import colors from "../colors";
-import { FileItem } from "../types";
+import colors from "styles/colors";
+
+export interface FileItem {
+  file: File;
+  url?: string;
+}
 
 const Input = styled.input``;
 
