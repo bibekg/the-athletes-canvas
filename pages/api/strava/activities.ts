@@ -1,14 +1,15 @@
-import { createHandler } from "utils/api";
-import axios from "axios";
+import { createHandler } from "utils/api"
+import axios from "axios"
+import { reauthenticate } from "utils/api/strava"
 
 export default createHandler(async (req, res) => {
-  const accessToken = req.cookies["X-Access-Token"];
+  const accessToken = req.cookies["X-Access-Token"]
   if (accessToken == null) {
-    res.status(401).end();
-    return;
+    res.status(401).end()
+    return
   }
 
-  try {
+  const fetchActivitiesAndRespondToClient = async () => {
     const response = await axios({
       url: "https://www.strava.com/api/v3/athlete/activities",
       params: {
@@ -20,17 +21,38 @@ export default createHandler(async (req, res) => {
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },
-    });
+    })
 
     res.json({
       activities: response.data,
-    });
+    })
+  }
+
+  try {
+    await fetchActivitiesAndRespondToClient()
   } catch (err) {
-    if (err.response.status === 401) {
-      res.status(401).end();
+    if (err?.response?.status === 401) {
+      // Try refreshing the token
+      const refreshToken = req.cookies["X-Refresh-Token"]
+      if (refreshToken == null) {
+        res.status(401).end()
+        return
+      }
+
+      try {
+        await reauthenticate(refreshToken, req, res)
+        // Now try again
+        await fetchActivitiesAndRespondToClient()
+      } catch (err) {
+        if (err?.response?.status === 401) {
+          res.status(401).end()
+          return
+        }
+      }
     } else {
-      res.status(500).end();
-      console.log(err.response.data.errors);
+      // Original request failed for unknown reason
+      res.status(500).end()
+      console.log(err.response.data.errors)
     }
   }
-});
+})
