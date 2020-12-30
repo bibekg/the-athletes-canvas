@@ -1,7 +1,7 @@
 // Some colors appear more than once to provide useful alternate aliases
 const colors = {
   // Primary
-  primaryBlue: "#02B2FC",
+  primaryGreen: "rgb(104, 140, 92)",
   gold: "#EEB941",
 
   // Secondary

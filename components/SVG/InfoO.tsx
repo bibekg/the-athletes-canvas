@@ -21,7 +21,7 @@ const Info = ({ color, className }: SVGProps) => (
 )
 
 Info.defaultProps = {
-  color: colors.primaryBlue,
+  color: colors.primaryGreen,
 }
 
 export default Info

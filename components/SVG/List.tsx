@@ -21,7 +21,7 @@ const List = ({ color, className }: SVGProps) => (
 )
 
 List.defaultProps = {
-  color: colors.primaryBlue,
+  color: colors.primaryGreen,
 }
 
 export default List

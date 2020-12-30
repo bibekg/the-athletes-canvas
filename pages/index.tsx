@@ -61,7 +61,7 @@ export default function App() {
           alignItems="center"
           justifyContent="center"
         >
-          <Text.BrandHeader color={colors.primaryBlue}>
+          <Text.BrandHeader color={colors.primaryGreen}>
             The Athlete's Canvas
           </Text.BrandHeader>
           <a href={stravaOauthURL}>

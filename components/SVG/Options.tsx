@@ -25,7 +25,7 @@ const Options = ({ color, className }: SVGProps) => (
 )
 
 Options.defaultProps = {
-  color: colors.primaryBlue,
+  color: colors.primaryGreen,
 }
 
 export default Options

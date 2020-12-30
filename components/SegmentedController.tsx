@@ -113,10 +113,10 @@ const SegmentedController = ({
 
 SegmentedController.defaultProps = {
   unselectedBg: colors.white,
-  unselectedColor: colors.primaryBlue,
-  selectedBg: colors.primaryBlue,
+  unselectedColor: colors.primaryGreen,
+  selectedBg: colors.primaryGreen,
   selectedColor: colors.white,
-  borderColor: colors.primaryBlue,
+  borderColor: colors.primaryGreen,
 }
 
 export default SegmentedController

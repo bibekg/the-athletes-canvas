@@ -23,7 +23,7 @@ const Grid = ({ color, className }: SVGProps) => (
 )
 
 Grid.defaultProps = {
-  color: colors.primaryBlue,
+  color: colors.primaryGreen,
 }
 
 export default Grid

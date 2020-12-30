@@ -62,17 +62,17 @@ export const styleVariants = {
   primary: {
     borderWidth: "1px",
     borderStyle: "solid",
-    backgroundColor: colors.primaryBlue,
-    borderColor: colors.primaryBlue,
+    backgroundColor: colors.primaryGreen,
+    borderColor: colors.primaryGreen,
     color: colors.ivory,
     transition: buttonTransition,
     "&:hover": {
-      backgroundColor: "#224B79",
-      borderColor: "#224B79",
+      backgroundColor: polished.darken(0.1)(colors.primaryGreen),
+      borderColor: polished.darken(0.1)(colors.primaryGreen),
     },
     "&:active": {
-      backgroundColor: colors.twilight,
-      borderColor: colors.twilight,
+      backgroundColor: polished.darken(0.2)(colors.primaryGreen),
+      borderColor: polished.darken(0.2)(colors.primaryGreen),
     },
     "&:focus": {
       boxShadow: `0 0 4px 0 ${colors.outlineBlue}`,
@@ -85,14 +85,14 @@ export const styleVariants = {
     },
   },
 
-  primaryGold: generateColorVariant(colors.gold, colors.primaryBlue),
+  primaryGold: generateColorVariant(colors.gold, colors.primaryGreen),
 
   secondary: {
     borderWidth: "1px",
     borderStyle: "solid",
     backgroundColor: "transparent",
-    borderColor: colors.primaryBlue,
-    color: colors.primaryBlue,
+    borderColor: colors.primaryGreen,
+    color: colors.primaryGreen,
     transition: buttonTransition,
     "&:hover": {
       backgroundColor: colors.hoverBlue,
@@ -116,7 +116,7 @@ export const styleVariants = {
     borderStyle: "solid",
     backgroundColor: "transparent",
     borderColor: "transparent",
-    color: colors.primaryBlue,
+    color: colors.primaryGreen,
     boxShadow: "none",
     transition: buttonTransition,
     "&:hover": {

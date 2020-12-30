@@ -25,7 +25,7 @@ const Pen = ({ color, className }: SVGProps) => (
 )
 
 Pen.defaultProps = {
-  color: colors.primaryBlue,
+  color: colors.primaryGreen,
 }
 
 export default Pen

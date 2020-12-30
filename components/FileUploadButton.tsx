@@ -180,9 +180,9 @@ const FileUploadButton = ({
           width={width}
           variant="unstyled"
           css={css`
-            border: 1px dashed ${colors.primaryBlue};
+            border: 1px dashed ${colors.primaryGreen};
             background: white;
-            color: ${colors.primaryBlue};
+            color: ${colors.primaryGreen};
             display: flex;
             align-items: center;
             justify-content: center;
@@ -197,7 +197,7 @@ const FileUploadButton = ({
           `}
         >
           <SVG.Upload
-            color={colors.primaryBlue}
+            color={colors.primaryGreen}
             css={css`
               margin-right: 8px;
             `}

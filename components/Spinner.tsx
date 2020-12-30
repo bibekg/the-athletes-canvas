@@ -12,7 +12,7 @@ const SpinnerStyledComponent = styled("div")<Props>`
   border-radius: 50%;
   border: calc(${(props) => props.size || "50px"} / 12.5) solid transparent;
   border-top: calc(${(props) => props.size || "50px"} / 12.5) solid
-    ${colors.primaryBlue};
+    ${colors.primaryGreen};
   animation: ${animations.rotate360} 1s ease infinite;
 `
 

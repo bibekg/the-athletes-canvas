@@ -378,7 +378,7 @@ export const MapViewer = ({ activities }: Props) => {
         flexShrink={0}
       >
         <Box p={3} bg="white">
-          <Text.PageHeader color={colors.primaryBlue}>
+          <Text.PageHeader color={colors.primaryGreen}>
             The Athlete's Canvas
           </Text.PageHeader>
           <Text.Body3>
