@@ -1,4 +1,5 @@
-import Head from "next/head";
+import Head from "next/head"
+import { css, Global } from "@emotion/react"
 
 function MyApp({ Component, pageProps }) {
   return (
@@ -9,9 +10,20 @@ function MyApp({ Component, pageProps }) {
           rel="stylesheet"
         />
       </Head>
+      <Global
+        styles={css`
+          *,
+          body,
+          *:before,
+          *:after {
+            margin: 0;
+            box-sizing: border-box;
+          }
+        `}
+      />
       <Component {...pageProps} />
     </>
-  );
+  )
 }
 
-export default MyApp;
+export default MyApp
