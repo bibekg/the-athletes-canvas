@@ -1,9 +1,9 @@
-import * as React from "react";
-import styled from "@emotion/styled";
-import { animations, colors } from "styles";
+import * as React from "react"
+import styled from "@emotion/styled"
+import { animations, colors } from "styles"
 
 interface Props {
-  size?: string;
+  size?: string
 }
 
 const SpinnerStyledComponent = styled("div")<Props>`
@@ -11,10 +11,13 @@ const SpinnerStyledComponent = styled("div")<Props>`
   height: ${(props: Props) => props.size || "50px"};
   border-radius: 50%;
   border: calc(${(props) => props.size || "50px"} / 12.5) solid transparent;
-  border-top: calc(${(props) => props.size || "50px"} / 12.5) solid ${colors.nomusBlue};
+  border-top: calc(${(props) => props.size || "50px"} / 12.5) solid
+    ${colors.primaryBlue};
   animation: ${animations.rotate360} 1s ease infinite;
-`;
+`
 
-const Spinner = (props: Props) => <SpinnerStyledComponent data-testid="spinner" {...props} />;
+const Spinner = (props: Props) => (
+  <SpinnerStyledComponent data-testid="spinner" {...props} />
+)
 
-export default Spinner;
+export default Spinner

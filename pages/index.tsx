@@ -61,9 +61,9 @@ export default function App() {
           alignItems="center"
           justifyContent="center"
         >
-          <Text.PageHeader color={colors.nomusBlue}>
+          <Text.BrandHeader color={colors.primaryBlue}>
             The Athlete's Canvas
-          </Text.PageHeader>
+          </Text.BrandHeader>
           <a href={stravaOauthURL}>
             <Image role="button" src="/images/connect-with-strava-button.svg" />
           </a>

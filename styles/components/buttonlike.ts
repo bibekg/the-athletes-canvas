@@ -1,183 +1,183 @@
-import colors from '../colors'
-import typography from '../typography'
-import * as polished from 'polished'
-import { mq } from '../breakpoints'
+import colors from "../colors"
+import typography from "../typography"
+import * as polished from "polished"
+import { mq } from "../breakpoints"
 const { fontFamilies } = typography
 
 // Defining button styles centrally here since both <a /> and <button /> will consume them
 
 export const baseButtonStyles = {
-  fontFamily: fontFamilies.rubik,
-  letterSpacing: '0.02em',
+  fontFamily: fontFamilies.primary,
+  letterSpacing: "0.02em",
   fontWeight: 500,
-  cursor: 'pointer',
-  border: 'none',
-  textAlign: 'center',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  outline: 'none',
-  '&:disabled': {
-    cursor: 'not-allowed',
+  cursor: "pointer",
+  border: "none",
+  textAlign: "center",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  outline: "none",
+  "&:disabled": {
+    cursor: "not-allowed",
   },
 } as const
 
 const buttonTransition = [
-  'color',
-  'background-color',
-  'border-color',
-  'box-shadow',
-  'outline',
+  "color",
+  "background-color",
+  "border-color",
+  "box-shadow",
+  "outline",
 ]
   .map((prop) => `0.3s ease ${prop}`)
-  .join(', ')
+  .join(", ")
 
 const generateColorVariant = (rootColor: string, textColor: string) => ({
-  borderWidth: '1px',
-  borderStyle: 'solid',
+  borderWidth: "1px",
+  borderStyle: "solid",
   backgroundColor: rootColor,
   borderColor: rootColor,
   color: textColor,
   transition: buttonTransition,
-  '&:hover': {
+  "&:hover": {
     backgroundColor: polished.darken(0.05, rootColor),
     borderColor: polished.darken(0.05, rootColor),
   },
-  '&:active': {
+  "&:active": {
     backgroundColor: polished.darken(0.1, rootColor),
     borderColor: polished.darken(0.1, rootColor),
   },
-  '&:focus': {
+  "&:focus": {
     boxShadow: `0 0 4px 0 ${colors.outlineBlue}`,
-    outline: 'none',
+    outline: "none",
   },
-  '&:disabled': {
-    backgroundColor: '#DFE5EC',
+  "&:disabled": {
+    backgroundColor: "#DFE5EC",
     color: colors.disabledBlue,
-    borderColor: '#DFE5EC',
+    borderColor: "#DFE5EC",
   },
 })
 
 export const styleVariants = {
   primary: {
-    borderWidth: '1px',
-    borderStyle: 'solid',
-    backgroundColor: colors.nomusBlue,
-    borderColor: colors.nomusBlue,
+    borderWidth: "1px",
+    borderStyle: "solid",
+    backgroundColor: colors.primaryBlue,
+    borderColor: colors.primaryBlue,
     color: colors.ivory,
     transition: buttonTransition,
-    '&:hover': {
-      backgroundColor: '#224B79',
-      borderColor: '#224B79',
+    "&:hover": {
+      backgroundColor: "#224B79",
+      borderColor: "#224B79",
     },
-    '&:active': {
+    "&:active": {
       backgroundColor: colors.twilight,
       borderColor: colors.twilight,
     },
-    '&:focus': {
+    "&:focus": {
       boxShadow: `0 0 4px 0 ${colors.outlineBlue}`,
-      outline: 'none',
+      outline: "none",
     },
-    '&:disabled': {
-      backgroundColor: '#DFE5EC',
+    "&:disabled": {
+      backgroundColor: "#DFE5EC",
       color: colors.disabledBlue,
-      borderColor: '#DFE5EC',
+      borderColor: "#DFE5EC",
     },
   },
 
-  primaryGold: generateColorVariant(colors.gold, colors.nomusBlue),
+  primaryGold: generateColorVariant(colors.gold, colors.primaryBlue),
 
   secondary: {
-    borderWidth: '1px',
-    borderStyle: 'solid',
-    backgroundColor: 'transparent',
-    borderColor: colors.nomusBlue,
-    color: colors.nomusBlue,
+    borderWidth: "1px",
+    borderStyle: "solid",
+    backgroundColor: "transparent",
+    borderColor: colors.primaryBlue,
+    color: colors.primaryBlue,
     transition: buttonTransition,
-    '&:hover': {
+    "&:hover": {
       backgroundColor: colors.hoverBlue,
     },
-    '&:active': {
+    "&:active": {
       backgroundColor: colors.activeBlue,
     },
-    '&:focus': {
+    "&:focus": {
       boxShadow: `0 0 4px 0 ${colors.outlineBlue}`,
-      outline: 'none',
+      outline: "none",
     },
-    '&:disabled': {
-      backgroundColor: 'transparent',
+    "&:disabled": {
+      backgroundColor: "transparent",
       color: colors.disabledBlue,
       borderColor: colors.disabledBlue,
     },
   },
 
   tertiary: {
-    borderWidth: '1px',
-    borderStyle: 'solid',
-    backgroundColor: 'transparent',
-    borderColor: 'transparent',
-    color: colors.nomusBlue,
-    boxShadow: 'none',
+    borderWidth: "1px",
+    borderStyle: "solid",
+    backgroundColor: "transparent",
+    borderColor: "transparent",
+    color: colors.primaryBlue,
+    boxShadow: "none",
     transition: buttonTransition,
-    '&:hover': {
+    "&:hover": {
       backgroundColor: colors.hoverBlue,
     },
-    '&:active': {
+    "&:active": {
       backgroundColor: colors.activeBlue,
     },
-    '&:focus': {
+    "&:focus": {
       boxShadow: `0 0 4px 0 ${colors.outlineBlue}`,
-      outline: 'none',
+      outline: "none",
     },
-    '&:disabled': {
-      backgroundColor: 'transparent',
+    "&:disabled": {
+      backgroundColor: "transparent",
       color: colors.disabledBlue,
     },
   },
 
   danger: {
-    borderWidth: '1px',
-    borderStyle: 'solid',
-    backgroundColor: 'white',
+    borderWidth: "1px",
+    borderStyle: "solid",
+    backgroundColor: "white",
     borderColor: colors.invalidRed,
     color: colors.invalidRed,
     transition: buttonTransition,
-    '&:hover': {
+    "&:hover": {
       backgroundColor: colors.hoverRed,
     },
-    '&:active': {
+    "&:active": {
       backgroundColor: colors.activeRed,
     },
-    '&:focus': {
+    "&:focus": {
       boxShadow: `0 0 4px 0 ${colors.outlineRed}`,
-      outline: 'none',
+      outline: "none",
     },
-    '&:disabled': {
-      backgroundColor: 'white',
+    "&:disabled": {
+      backgroundColor: "white",
       color: colors.invalidRed,
       borderColor: colors.invalidRed,
     },
   },
 
   success: {
-    borderWidth: '1px',
-    borderStyle: 'solid',
-    backgroundColor: 'white',
+    borderWidth: "1px",
+    borderStyle: "solid",
+    backgroundColor: "white",
     borderColor: colors.validGreen,
     color: colors.validGreen,
     transition: buttonTransition,
-    '&:hover': {
+    "&:hover": {
       backgroundColor: colors.hoverGreen,
     },
-    '&:active': {
+    "&:active": {
       backgroundColor: colors.activeGreen,
     },
-    '&:focus': {
+    "&:focus": {
       boxShadow: `0 0 4px 0 ${colors.outlineGreen}`,
-      outline: 'none',
+      outline: "none",
     },
-    '&:disabled': {
-      backgroundColor: 'white',
+    "&:disabled": {
+      backgroundColor: "white",
       color: colors.validGreen,
       borderColor: colors.validGreen,
     },
@@ -188,18 +188,18 @@ export const styleVariants = {
 
 export const sizeVariants = {
   big: {
-    fontSize: '16px',
+    fontSize: "16px",
     [mq.md]: {
-      fontSize: '20px',
+      fontSize: "20px",
     },
-    borderRadius: '2em',
-    paddingTop: '13px',
-    paddingBottom: '13px',
+    borderRadius: "2em",
+    paddingTop: "13px",
+    paddingBottom: "13px",
   },
   normal: {
-    paddingTop: '9.5px',
-    paddingBottom: '9.5px',
-    fontSize: '14px',
-    borderRadius: '8px',
+    paddingTop: "9.5px",
+    paddingBottom: "9.5px",
+    fontSize: "14px",
+    borderRadius: "8px",
   },
 }

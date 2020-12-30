@@ -1,6 +1,6 @@
-import * as React from "react";
-import { colors } from "styles";
-import { SVGProps } from "./types";
+import * as React from "react"
+import { colors } from "styles"
+import { SVGProps } from "./types"
 
 const List = ({ color, className }: SVGProps) => (
   <svg
@@ -18,10 +18,10 @@ const List = ({ color, className }: SVGProps) => (
       fill={color}
     />
   </svg>
-);
+)
 
 List.defaultProps = {
-  color: colors.nomusBlue,
-};
+  color: colors.primaryBlue,
+}
 
-export default List;
+export default List

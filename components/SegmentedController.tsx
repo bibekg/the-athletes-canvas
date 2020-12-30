@@ -1,12 +1,12 @@
-import { css } from "@emotion/react";
-import * as React from "react";
-import Box from "components/Box";
-import { InternalLink } from "components/Link";
-import * as SVG from "components/SVG";
-import * as Text from "components/Text";
-import { colors } from "styles";
+import { css } from "@emotion/react"
+import * as React from "react"
+import Box from "components/Box"
+import { InternalLink } from "components/Link"
+import * as SVG from "components/SVG"
+import * as Text from "components/Text"
+import { colors } from "styles"
 
-type ValueOf<T> = T[keyof T];
+type ValueOf<T> = T[keyof T]
 
 export enum TabActionType {
   InternalLink,
@@ -14,23 +14,23 @@ export enum TabActionType {
 }
 
 interface TabConfig {
-  id: string | number;
-  title: string;
-  Icon?: ValueOf<typeof SVG>;
-  actionType: TabActionType;
-  onClick?: () => void;
+  id: string | number
+  title: string
+  Icon?: ValueOf<typeof SVG>
+  actionType: TabActionType
+  onClick?: () => void
   // Required if actionType is 'internalLink' or 'externalLink'
-  linkTo?: string;
+  linkTo?: string
 }
 
 interface Props {
-  selectedTabId?: string;
-  tabs: TabConfig[];
-  unselectedBg?: string;
-  unselectedColor?: string;
-  selectedBg?: string;
-  selectedColor?: string;
-  borderColor?: string;
+  selectedTabId?: string
+  tabs: TabConfig[]
+  unselectedBg?: string
+  unselectedColor?: string
+  selectedBg?: string
+  selectedColor?: string
+  borderColor?: string
 }
 
 const SegmentedController = ({
@@ -53,8 +53,8 @@ const SegmentedController = ({
       overflow="hidden"
     >
       {tabs.map((tabConfig) => {
-        const selected = selectedTabId === tabConfig.id;
-        const { Icon } = tabConfig;
+        const selected = selectedTabId === tabConfig.id
+        const { Icon } = tabConfig
         const InnerContent = (
           <Box
             bg={selected ? selectedBg : unselectedBg}
@@ -81,7 +81,7 @@ const SegmentedController = ({
               {tabConfig.title}
             </Text.Body3>
           </Box>
-        );
+        )
         return {
           [TabActionType.InternalLink]: (
             <Box key={tabConfig.id} width={`${100 / tabs.length}%`}>
@@ -105,18 +105,18 @@ const SegmentedController = ({
               {InnerContent}
             </Box>
           ),
-        }[tabConfig.actionType];
+        }[tabConfig.actionType]
       })}
     </Box>
-  );
-};
+  )
+}
 
 SegmentedController.defaultProps = {
   unselectedBg: colors.white,
-  unselectedColor: colors.nomusBlue,
-  selectedBg: colors.nomusBlue,
+  unselectedColor: colors.primaryBlue,
+  selectedBg: colors.primaryBlue,
   selectedColor: colors.white,
-  borderColor: colors.nomusBlue,
-};
+  borderColor: colors.primaryBlue,
+}
 
-export default SegmentedController;
+export default SegmentedController

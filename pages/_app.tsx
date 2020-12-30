@@ -9,6 +9,10 @@ function MyApp({ Component, pageProps }: any) {
           href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap"
           rel="stylesheet"
         />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Yellowtail:wght@400&display=swap"
+          rel="stylesheet"
+        />
       </Head>
       <Global
         styles={css`

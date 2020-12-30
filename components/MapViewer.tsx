@@ -20,7 +20,10 @@ import { colors } from "styles"
 import shadows from "styles/shadows"
 import { SummaryActivity } from "types/strava"
 import { ActivityType } from "types/strava/enums"
+import { activityTypeEmojis } from "utils/strava"
+import { hasOwnProperty } from "utils/typecheck"
 import Image from "./Image"
+import Link from "./Link"
 import SegmentedController, { TabActionType } from "./SegmentedController"
 
 const makeColorString = (color: RGBColor) =>
@@ -66,14 +69,8 @@ interface Props {
   activities: Array<SummaryActivity>
 }
 
-const activityTypeOptionsWithEmoji = [
-  { value: ActivityType.Run, label: "🏃 Run" },
-  { value: ActivityType.Ride, label: "🚴🏻 Ride" },
-  { value: ActivityType.Walk, label: "🚶 Walk" },
-  { value: ActivityType.Hike, label: "🥾 Hike" },
-  { value: ActivityType.Workout, label: "🏋️ Workout" },
-  { value: ActivityType.Swim, label: "🏊 Swim" },
-]
+const getActivityTypeLabel = (activityType: ActivityType) =>
+  `${activityTypeEmojis[activityType]} ${activityType}`
 
 const animationDurationOptions = [
   { value: 0, label: "None" },
@@ -170,10 +167,7 @@ export const MapViewer = ({ activities }: Props) => {
     .filter((item, index, arr) => arr.indexOf(item) === index)
     .map((item) => ({
       value: item,
-      // For some types, we have a custom label with an emoji; use that if present
-      label:
-        activityTypeOptionsWithEmoji.find((atwe) => atwe.value === item)
-          ?.label ?? item,
+      label: getActivityTypeLabel(item),
     }))
 
   const defaultValues: CustomizationOptions = {
@@ -310,357 +304,388 @@ export const MapViewer = ({ activities }: Props) => {
   return (
     <Box
       display="grid"
-      gridTemplateColumns="400px 300px 1fr"
+      gridTemplateColumns="350px 300px 1fr"
       height="100vh"
       gridTemplateAreas={`
-      "panel routeList map"
+      "header header map"
+      "options routeList map"
+      "buttons buttons map"
     `}
     >
       <Box
-        gridArea="panel"
+        gridArea="header"
         display="grid"
         gridTemplateColumns="1fr"
         gridTemplateRows="auto auto 1fr auto"
         width="100%"
         bg={colors.offWhite}
         flexShrink={0}
-        height="100vh"
-        borderRight={`1px solid ${colors.africanElephant}`}
       >
         <Box p={3} bg="white">
-          <Text.SectionHeader color={colors.nomusBlue}>
+          <Text.PageHeader color={colors.primaryBlue}>
             The Athlete's Canvas
-          </Text.SectionHeader>
+          </Text.PageHeader>
           <Text.Body3>
             Create a minimalist heatmap of your activities. After tweaking the
             visualization to your preferences, you can right-click and save it
             to a PNG.
           </Text.Body3>
         </Box>
+      </Box>
 
-        {/* Options */}
-        <Box
-          flexGrow={0}
-          overflow="auto"
-          borderTop={`1px solid ${colors.africanElephant}`}
-          borderBottom={`1px solid ${colors.africanElephant}`}
-          p={3}
-        >
-          {/* SegmentedController */}
+      {/* Options */}
+      <Box
+        gridArea="options"
+        flexGrow={0}
+        overflow="auto"
+        bg={colors.offWhite}
+        borderTop={`1px solid ${colors.africanElephant}`}
+        borderBottom={`1px solid ${colors.africanElephant}`}
+        p={3}
+      >
+        {/* SegmentedController */}
 
-          <Box mb={3}>
-            <SegmentedController
-              tabs={[
-                {
-                  id: "routes",
-                  title: "Select activities",
-                  actionType: TabActionType.OnClick,
-                  onClick: () => setMode("routes"),
-                },
-                {
-                  id: "visualization",
-                  title: "Configure visualization",
-                  actionType: TabActionType.OnClick,
-                  onClick: () => setMode("visualization"),
-                },
-              ]}
-              selectedTabId={mode}
-            />
-          </Box>
+        <Box mb={3}>
+          <SegmentedController
+            tabs={[
+              {
+                id: "routes",
+                title: "Select activities",
+                actionType: TabActionType.OnClick,
+                onClick: () => setMode("routes"),
+              },
+              {
+                id: "visualization",
+                title: "Configure canvas",
+                actionType: TabActionType.OnClick,
+                onClick: () => setMode("visualization"),
+              },
+            ]}
+            selectedTabId={mode}
+          />
+        </Box>
 
-          <Form.Form onSubmit={handleSubmit(onSubmit)} id="customizations">
-            {/* Activity filtering options */}
-            <Box
-              display={mode === "routes" ? "grid" : "none"}
-              gridTemplateAreas={`
+        <Form.Form onSubmit={handleSubmit(onSubmit)} id="customizations">
+          {/* Activity filtering options */}
+          <Box
+            display={mode === "routes" ? "grid" : "none"}
+            gridTemplateAreas={`
                   "startDate endDate"
                   "activityTypes activityTypes"
                   "useCustomCoords useCustomCoords"
                   "leftLon rightLon"
                   "upperLat lowerLat"
                 `}
-              gridTemplateColumns="1fr 1fr"
-              gridTemplateRows="auto"
-              placeContent="start"
-              gridRowGap={4}
-              gridColumnGap={2}
-              flexShrink={0}
-              flexGrow={0}
-              width="100%"
-            >
-              <Form.Item gridArea="startDate">
-                <Form.Label>Start date</Form.Label>
-                <Form.Input name="startDate" type="date" ref={register()} />
-              </Form.Item>
-              <Form.Item gridArea="endDate">
-                <Form.Label>End date</Form.Label>
-                <Form.Input name="endDate" type="date" ref={register()} />
-              </Form.Item>
-              <Form.Item gridArea="activityTypes">
-                <Form.Label>Activity Types</Form.Label>
-                {activityTypeOptions.map((option) => (
-                  <Box display="flex" key={option.value}>
-                    <Form.Input
-                      type="checkbox"
-                      name="activityTypes"
-                      value={option.value}
-                      ref={register()}
-                    />
-                    <Text.Body3 ml={2}>{option.label}</Text.Body3>
-                  </Box>
-                ))}
-              </Form.Item>
-              <Form.Item gridArea="useCustomCoords">
-                <Form.Label>Use custom coordinate bounds?</Form.Label>
-                <Form.FieldDescription>
-                  By default, the coordinate bounds are automatically determined
-                  to fit the selected activities. If you'd like, you can
-                  override the bounds yourself.
-                </Form.FieldDescription>
-                <Form.Input
-                  name="useCustomCoords"
-                  type="checkbox"
-                  ref={register()}
-                />
-              </Form.Item>
+            gridTemplateColumns="1fr 1fr"
+            gridTemplateRows="auto"
+            placeContent="start"
+            gridRowGap={4}
+            gridColumnGap={2}
+            flexShrink={0}
+            flexGrow={0}
+            width="100%"
+          >
+            <Form.Item gridArea="startDate">
+              <Form.Label>Start date</Form.Label>
+              <Form.Input name="startDate" type="date" ref={register()} />
+            </Form.Item>
+            <Form.Item gridArea="endDate">
+              <Form.Label>End date</Form.Label>
+              <Form.Input name="endDate" type="date" ref={register()} />
+            </Form.Item>
+            <Form.Item gridArea="activityTypes">
+              <Form.Label>Activity Types</Form.Label>
+              {activityTypeOptions.map((option) => (
+                <Box display="flex" key={option.value}>
+                  <Form.Input
+                    type="checkbox"
+                    name="activityTypes"
+                    value={option.value}
+                    ref={register()}
+                  />
+                  <Text.Body3 ml={2}>{option.label}</Text.Body3>
+                </Box>
+              ))}
+            </Form.Item>
+            <Form.Item gridArea="useCustomCoords">
+              <Form.Label>Use custom coordinate bounds?</Form.Label>
+              <Form.FieldDescription>
+                By default, the coordinate bounds are automatically determined
+                to fit the selected activities. If you'd like, you can override
+                the bounds yourself.
+              </Form.FieldDescription>
+              <Form.Input
+                name="useCustomCoords"
+                type="checkbox"
+                ref={register()}
+              />
+            </Form.Item>
 
-              <Form.Item gridArea="leftLon">
-                <Form.Label>Left Longitude</Form.Label>
-                <Form.Input
-                  name="leftLon"
-                  type="number"
-                  ref={register({ valueAsNumber: true })}
-                  min={-180}
-                  max={values.rightLon}
-                  step="any"
-                  disabled={!values.useCustomCoords}
-                />
-              </Form.Item>
-              <Form.Item gridArea="rightLon">
-                <Form.Label>Right Longitude</Form.Label>
-                <Form.Input
-                  name="rightLon"
-                  type="number"
-                  ref={register({ valueAsNumber: true })}
-                  min={values.leftLon}
-                  max={180}
-                  step="any"
-                  disabled={!values.useCustomCoords}
-                />
-              </Form.Item>
-              <Form.Item gridArea="upperLat">
-                <Form.Label>Upper Latitude</Form.Label>
-                <Form.Input
-                  name="upperLat"
-                  type="number"
-                  ref={register({ valueAsNumber: true })}
-                  min={values.lowerLat}
-                  max={90}
-                  step="any"
-                  disabled={!values.useCustomCoords}
-                />
-              </Form.Item>
-              <Form.Item gridArea="lowerLat">
-                <Form.Label>Lower Latitude</Form.Label>
-                <Form.Input
-                  name="lowerLat"
-                  type="number"
-                  ref={register({ valueAsNumber: true })}
-                  min={-90}
-                  max={values.upperLat}
-                  step="any"
-                  disabled={!values.useCustomCoords}
-                />
-              </Form.Item>
-            </Box>
-            {/* Visualization Options */}
+            <Form.Item gridArea="leftLon">
+              <Form.Label>Left Longitude</Form.Label>
+              <Form.Input
+                name="leftLon"
+                type="number"
+                ref={register({ valueAsNumber: true })}
+                min={-180}
+                max={values.rightLon}
+                step="any"
+                disabled={!values.useCustomCoords}
+              />
+            </Form.Item>
+            <Form.Item gridArea="rightLon">
+              <Form.Label>Right Longitude</Form.Label>
+              <Form.Input
+                name="rightLon"
+                type="number"
+                ref={register({ valueAsNumber: true })}
+                min={values.leftLon}
+                max={180}
+                step="any"
+                disabled={!values.useCustomCoords}
+              />
+            </Form.Item>
+            <Form.Item gridArea="upperLat">
+              <Form.Label>Upper Latitude</Form.Label>
+              <Form.Input
+                name="upperLat"
+                type="number"
+                ref={register({ valueAsNumber: true })}
+                min={values.lowerLat}
+                max={90}
+                step="any"
+                disabled={!values.useCustomCoords}
+              />
+            </Form.Item>
+            <Form.Item gridArea="lowerLat">
+              <Form.Label>Lower Latitude</Form.Label>
+              <Form.Input
+                name="lowerLat"
+                type="number"
+                ref={register({ valueAsNumber: true })}
+                min={-90}
+                max={values.upperLat}
+                step="any"
+                disabled={!values.useCustomCoords}
+              />
+            </Form.Item>
+          </Box>
+          {/* Visualization Options */}
 
-            <Box
-              display={mode === "visualization" ? "grid" : "none"}
-              gridTemplateAreas={`
+          <Box
+            display={mode === "visualization" ? "grid" : "none"}
+            gridTemplateAreas={`
                 "animationDuration animationDuration"
                 "mapResolution mapResolution"
                 "thickness thickness"
                 "bgColor bgColor"
                 "pathColor pathColor"
                 `}
-              gridTemplateColumns="1fr 1fr"
-              gridTemplateRows="auto"
-              placeContent="start"
-              gridRowGap={4}
-              gridColumnGap={2}
-              flexShrink={0}
-              flexGrow={0}
-              width="100%"
-            >
-              <Form.Item gridArea="animationDuration">
-                <Form.Label>Animation</Form.Label>
-                <Form.FieldDescription>
-                  Controls whether (and at what speed) the rendering process
-                  will gradually animate your paths being drawn.
-                </Form.FieldDescription>
-                <Form.Select
-                  name="animationDuration"
-                  ref={register({ valueAsNumber: true })}
-                >
-                  {animationDurationOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </Form.Select>
-              </Form.Item>
-              <Form.Item gridArea="thickness">
-                <Form.Label>Line Thickness</Form.Label>
-                <Form.FieldDescription>
-                  Controls how thick the route path lines are.
-                </Form.FieldDescription>
-                <Form.Input
-                  name="thickness"
-                  type="range"
-                  ref={register({ valueAsNumber: true })}
-                  min={0.1}
-                  max={1}
-                  step={0.1}
-                />
-              </Form.Item>
-              <Form.Item gridArea="mapResolution">
-                <Form.Label>Map Resolution</Form.Label>
-                <Form.FieldDescription>
-                  Controls the resolution of the image, relative to the amount
-                  of geographical area the map covers. The maximum width is
-                  20,000 pixels.
-                </Form.FieldDescription>
+            gridTemplateColumns="1fr 1fr"
+            gridTemplateRows="auto"
+            placeContent="start"
+            gridRowGap={4}
+            gridColumnGap={2}
+            flexShrink={0}
+            flexGrow={0}
+            width="100%"
+          >
+            <Form.Item gridArea="animationDuration">
+              <Form.Label>Animation</Form.Label>
+              <Form.FieldDescription>
+                Controls whether (and at what speed) the rendering process will
+                gradually animate your paths being drawn.
+              </Form.FieldDescription>
+              <Form.Select
+                name="animationDuration"
+                ref={register({ valueAsNumber: true })}
+              >
+                {animationDurationOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </Form.Select>
+            </Form.Item>
+            <Form.Item gridArea="thickness">
+              <Form.Label>Line Thickness</Form.Label>
+              <Form.FieldDescription>
+                Controls how thick the route path lines are.
+              </Form.FieldDescription>
+              <Form.Input
+                name="thickness"
+                type="range"
+                ref={register({ valueAsNumber: true })}
+                min={0.1}
+                max={1}
+                step={0.1}
+              />
+            </Form.Item>
+            <Form.Item gridArea="mapResolution">
+              <Form.Label>Map Resolution</Form.Label>
+              <Form.FieldDescription>
+                Controls the resolution of the image, relative to the amount of
+                geographical area the map covers. The maximum width is 20,000
+                pixels.
+              </Form.FieldDescription>
 
-                <Form.Select
-                  name="mapResolution"
-                  ref={register({ valueAsNumber: true })}
-                >
-                  {resolutionOptions.map((item) => (
-                    <option key={item.value} value={item.value}>
-                      {item.label}
-                    </option>
-                  ))}
-                </Form.Select>
-                {imageResolution && (
-                  <Text.Body3 mt={2}>
-                    Current Resolution:{" "}
-                    <span css={css({ fontWeight: 500 })}>
-                      {imageResolution.width} x {imageResolution.height}
-                    </span>
-                  </Text.Body3>
+              <Form.Select
+                name="mapResolution"
+                ref={register({ valueAsNumber: true })}
+              >
+                {resolutionOptions.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label}
+                  </option>
+                ))}
+              </Form.Select>
+              {imageResolution && (
+                <Text.Body3 mt={2}>
+                  Current Resolution:{" "}
+                  <span css={css({ fontWeight: 500 })}>
+                    {imageResolution.width} x {imageResolution.height}
+                  </span>
+                </Text.Body3>
+              )}
+            </Form.Item>
+            <Form.Item gridArea="bgColor">
+              <Form.Label>Background Color</Form.Label>
+              <Controller
+                name="bgColor"
+                control={control}
+                render={(props) => (
+                  <>
+                    <CompactPicker
+                      css={css({
+                        width: "100% !important",
+                      })}
+                      color={props.value ?? undefined}
+                      onChange={(color) => props.onChange(color.rgb)}
+                    />
+                    <AlphaPicker
+                      css={css({
+                        width: "100% !important",
+                        marginTop: "8px",
+                      })}
+                      color={props.value ?? undefined}
+                      onChange={(color) => props.onChange(color.rgb)}
+                    />
+                  </>
                 )}
-              </Form.Item>
-              {/* <Form.Item gridArea="pathResolution">
-                <Form.Label>Path Resolution</Form.Label>
-                <Form.FieldDescription>
-                  Controls how many of the points in the path to consider.
-                </Form.FieldDescription>
-                <Form.Select
-                  name="pathResolution"
-                  ref={register({ valueAsNumber: true })}
-                >
-                  {resolutionOptions.map((item) => (
-                    <option key={item.value} value={item.value}>
-                      {item.label}
-                    </option>
-                  ))}
-                </Form.Select>
-              </Form.Item> */}
-              <Form.Item gridArea="bgColor">
-                <Form.Label>Background Color</Form.Label>
-                <Controller
-                  name="bgColor"
-                  control={control}
-                  render={(props) => (
-                    <>
-                      <CompactPicker
-                        css={css({
-                          width: "100% !important",
-                        })}
-                        color={props.value ?? undefined}
-                        onChange={(color) => props.onChange(color.rgb)}
-                      />
-                      <AlphaPicker
-                        css={css({
-                          width: "100% !important",
-                          marginTop: "8px",
-                        })}
-                        color={props.value ?? undefined}
-                        onChange={(color) => props.onChange(color.rgb)}
-                      />
-                    </>
-                  )}
-                />
-              </Form.Item>
-              <Form.Item gridArea="pathColor">
-                <Form.Label>Path Color</Form.Label>
-                <Controller
-                  name="pathColor"
-                  control={control}
-                  render={(props) => (
-                    <>
-                      <CompactPicker
-                        css={css({
-                          width: "100% !important",
-                          fontFamily: "Rubik !important",
-                        })}
-                        color={props.value ?? undefined}
-                        onChange={(color) => props.onChange(color.rgb)}
-                      />
-                      <AlphaPicker
-                        css={css({
-                          width: "100% !important",
-                          marginTop: "8px",
-                        })}
-                        color={props.value ?? undefined}
-                        onChange={(color) => props.onChange(color.rgb)}
-                      />
-                    </>
-                  )}
-                />
-              </Form.Item>
-            </Box>
-          </Form.Form>
-        </Box>
+              />
+            </Form.Item>
+            <Form.Item gridArea="pathColor">
+              <Form.Label>Path Color</Form.Label>
+              <Controller
+                name="pathColor"
+                control={control}
+                render={(props) => (
+                  <>
+                    <CompactPicker
+                      css={css({
+                        width: "100% !important",
+                        fontFamily: "Rubik !important",
+                      })}
+                      color={props.value ?? undefined}
+                      onChange={(color) => props.onChange(color.rgb)}
+                    />
+                    <AlphaPicker
+                      css={css({
+                        width: "100% !important",
+                        marginTop: "8px",
+                      })}
+                      color={props.value ?? undefined}
+                      onChange={(color) => props.onChange(color.rgb)}
+                    />
+                  </>
+                )}
+              />
+            </Form.Item>
+          </Box>
+        </Form.Form>
+      </Box>
 
-        <Box bg="white" p={3}>
-          {isDrawing && values.animationDuration !== 0 ? (
-            <Button
-              // There's a weird React bug(?) that was causing this button being clicked to trigger a form submission (the other button's job)
-              // Requires specifying key to fix. See https://github.com/facebook/react/issues/8554 for more details.
-              key="stop"
-              size="big"
-              width="100%"
-              type="button"
-              variant="danger"
-              form="none"
-              onClick={() => {
-                routeMapRef.current?.cancelDrawing()
-                setIsDrawing(false)
-              }}
+      <Box
+        gridArea="routeList"
+        height="100%"
+        display="grid"
+        overflowY="auto"
+        gridTemplateColumns="1fr"
+        gridTemplateRows="1fr auto"
+        borderTop={`1px solid ${colors.africanElephant}`}
+        borderBottom={`1px solid ${colors.africanElephant}`}
+        borderLeft={`1px solid ${colors.africanElephant}`}
+        bg={colors.offWhite}
+      >
+        <Box
+          display="flex"
+          flexDirection="column"
+          flex={0}
+          overflowY="auto"
+          p={3}
+          boxShadow={shadows.inner}
+        >
+          {routesToRender.map((route) => (
+            <Link
+              key={route.id}
+              href={`https://www.strava.com/activities/${route.id}`}
             >
-              Stop drawing
-            </Button>
-          ) : (
-            <Button
-              mb={1}
-              key="update"
-              type="submit"
-              size="big"
-              width="100%"
-              form="customizations"
-              onClick={() => {
-                console.log("clicked submit")
-              }}
-              disabled={isDrawing}
-              inProgress={isDrawing}
-              inProgressText="Drawing..."
-            >
-              Re-draw map
-            </Button>
-          )}
+              <Box
+                p={2}
+                mb={2}
+                flexShrink={0}
+                boxShadow={shadows.knob}
+                borderRadius={2}
+                width="100%"
+                bg="white"
+              >
+                <Text.Body2>{route.name}</Text.Body2>
+                <Text.Body3>
+                  {dateFormat(route.startDate, "mmmm d, yyyy 'at' h:MM TT")}
+                </Text.Body3>
+                <Text.Body3>{getActivityTypeLabel(route.type)}</Text.Body3>
+              </Box>
+            </Link>
+          ))}
         </Box>
+      </Box>
+
+      <Box gridArea="buttons" bg="white" p={3}>
+        {isDrawing && values.animationDuration !== 0 ? (
+          <Button
+            // There's a weird React bug(?) that was causing this button being clicked to trigger a form submission (the other button's job)
+            // Requires specifying key to fix. See https://github.com/facebook/react/issues/8554 for more details.
+            key="stop"
+            size="big"
+            width="100%"
+            type="button"
+            variant="danger"
+            form="none"
+            onClick={() => {
+              routeMapRef.current?.cancelDrawing()
+              setIsDrawing(false)
+            }}
+          >
+            Stop plotting {routesToRender.length} activities
+          </Button>
+        ) : (
+          <Button
+            mb={1}
+            key="update"
+            type="submit"
+            size="big"
+            width="100%"
+            form="customizations"
+            onClick={() => {
+              console.log("clicked submit")
+            }}
+            disabled={isDrawing}
+            inProgress={isDrawing}
+            inProgressText="Drawing..."
+          >
+            Plot {routesToRender.length} activities
+          </Button>
+        )}
       </Box>
 
       <Box
@@ -671,6 +696,7 @@ export const MapViewer = ({ activities }: Props) => {
         justifyContent="center"
         alignItems="center"
         p={3}
+        borderLeft={`1px solid ${colors.africanElephant}`}
         bg={propsToPass.bgColor}
       >
         <RouteMap
@@ -683,46 +709,6 @@ export const MapViewer = ({ activities }: Props) => {
             maxWidth: "100%",
           })}
         />
-      </Box>
-
-      <Box
-        gridArea="routeList"
-        borderRight={`1px solid ${colors.africanElephant}`}
-        height="100vh"
-        display="grid"
-        gridTemplateColumns="1fr"
-        gridTemplateRows="auto 1fr"
-        bg={colors.offWhite}
-      >
-        <Text.SectionHeader p={3}>
-          {routesToRender.length} Activities
-        </Text.SectionHeader>
-        <Box
-          display="flex"
-          flexDirection="column"
-          flex={0}
-          overflowY="auto"
-          p={3}
-          boxShadow={shadows.inner}
-        >
-          {routesToRender.map((route) => (
-            <Box
-              key={route.id}
-              p={2}
-              mb={2}
-              flexShrink={0}
-              boxShadow={shadows.knob}
-              borderRadius={2}
-              width="100%"
-              bg="white"
-            >
-              <Text.Body2>{route.name}</Text.Body2>
-              <Text.Body3>
-                {dateFormat(route.startDate, "mmmm d, yyyy 'at' h:MM TT")}
-              </Text.Body3>
-            </Box>
-          ))}
-        </Box>
       </Box>
 
       <Box position="fixed" zIndex={1} bottom="10px" right="10px" width="100px">

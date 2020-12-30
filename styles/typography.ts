@@ -1,13 +1,14 @@
-import colors from './colors'
+import colors from "./colors"
 
 const fontFamilies = {
-  rubik: 'Rubik, Helvetica, sans-serif',
+  flair: "Yellowtail, Helvetica, sans-serif",
+  primary: "Rubik, Helvetica, sans-serif",
 }
 
 export const baseTextStyles = {
   margin: 0,
-  fontFamily: fontFamilies.rubik,
-  letterSpacing: '0.02em',
+  fontFamily: fontFamilies.primary,
+  letterSpacing: "0.02em",
 }
 
 const textStyles: Record<string, any> = {
@@ -17,12 +18,14 @@ const textStyles: Record<string, any> = {
     fontSize: [40, 40, 48, 48],
     lineHeight: [1.4, 1.4, 1.5, 1.5],
     color: colors.midnightGray,
+    fontFamily: fontFamilies.flair,
   },
   h2: {
     fontWeight: 300,
     fontSize: [32, 32, 40, 40],
     lineHeight: [1.4, 1.4, 1.5, 1.5],
     color: colors.midnightGray,
+    fontFamily: fontFamilies.flair,
   },
   h3: {
     fontWeight: 300,
@@ -47,7 +50,7 @@ const textStyles: Record<string, any> = {
     fontWeight: 400,
     fontSize: [18, 18, 18, 18],
     lineHeight: [1.4, 1.4, 1.5, 1.5],
-    letterSpacing: ['0.02em', '0.02em', '0.08em', '0.08em'],
+    letterSpacing: ["0.02em", "0.02em", "0.08em", "0.08em"],
     color: colors.midnightGray,
   },
 
@@ -76,10 +79,10 @@ const textStyles: Record<string, any> = {
     ...baseTextStyles,
     marginBottom: 1,
     fontSize: [14, 14, 14, 14],
-    letterSpacing: '0.08em',
+    letterSpacing: "0.08em",
     fontWeight: 500,
     color: colors.africanElephant,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
   },
   input: {
     ...baseTextStyles,

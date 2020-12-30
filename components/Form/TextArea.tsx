@@ -1,5 +1,5 @@
-import styled from "@emotion/styled";
-import theme from "styles/theme";
+import styled from "@emotion/styled"
+import theme from "styles/theme"
 import {
   border,
   BorderProps,
@@ -21,10 +21,10 @@ import {
   SpaceProps,
   typography,
   TypographyProps,
-} from "styled-system";
+} from "styled-system"
 
 type TextAreaProps = {
-  as?: string;
+  as?: string
 } & SpaceProps &
   PositionProps &
   ColorProps &
@@ -34,14 +34,14 @@ type TextAreaProps = {
   GridProps &
   FontSizeProps &
   LineHeightProps &
-  TypographyProps;
+  TypographyProps
 
 const TextArea = styled("textarea")<TextAreaProps>(
   {
     border: `1px solid ${theme.colors.africanElephant}`,
     borderRadius: "6px",
     padding: "12px",
-    fontFamily: theme.fontFamilies.rubik,
+    fontFamily: theme.fontFamilies.primary,
     fontWeight: 400,
   },
   space,
@@ -53,12 +53,12 @@ const TextArea = styled("textarea")<TextAreaProps>(
   grid,
   fontSize,
   lineHeight,
-  typography,
-);
+  typography
+)
 
 TextArea.defaultProps = {
   ...theme.textStyles.input,
   lineHeight: 1.5,
-};
+}
 
-export default TextArea;
+export default TextArea

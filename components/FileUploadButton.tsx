@@ -1,28 +1,28 @@
-import { css } from "@emotion/react";
-import styled from "@emotion/styled";
-import * as React from "react";
-import * as Text from "components/Text";
-import * as SVG from "components/SVG";
-import Box from "./Box";
-import Image from "./Image";
-import Button from "./Button";
-import colors from "styles/colors";
+import { css } from "@emotion/react"
+import styled from "@emotion/styled"
+import * as React from "react"
+import * as Text from "components/Text"
+import * as SVG from "components/SVG"
+import Box from "./Box"
+import Image from "./Image"
+import Button from "./Button"
+import colors from "styles/colors"
 
 export interface FileItem {
-  file: File;
-  url?: string;
+  file: File
+  url?: string
 }
 
-const Input = styled.input``;
+const Input = styled.input``
 
 interface Props {
-  name: string;
-  accept?: string;
-  width?: string;
-  selectedFileItem: FileItem | null;
-  handleFileItemChange: (file: FileItem | null) => void;
-  createObjectUrl: boolean;
-  showImagePreview: boolean;
+  name: string
+  accept?: string
+  width?: string
+  selectedFileItem: FileItem | null
+  handleFileItemChange: (file: FileItem | null) => void
+  createObjectUrl: boolean
+  showImagePreview: boolean
 }
 
 const FileUploadButton = ({
@@ -34,28 +34,28 @@ const FileUploadButton = ({
   createObjectUrl,
   showImagePreview,
 }: Props) => {
-  const inputRef = React.useRef<HTMLInputElement | null>(null);
-  const buttonRef = React.useRef<HTMLButtonElement | null>(null);
-  const lastFileItemRef = React.useRef<FileItem | null>(null);
-  const [isDragging, setIsDragging] = React.useState(false);
+  const inputRef = React.useRef<HTMLInputElement | null>(null)
+  const buttonRef = React.useRef<HTMLButtonElement | null>(null)
+  const lastFileItemRef = React.useRef<FileItem | null>(null)
+  const [isDragging, setIsDragging] = React.useState(false)
 
   React.useEffect(() => {
     if (selectedFileItem == null && lastFileItemRef.current != null) {
       if (inputRef.current) {
         // Force clear the input's value attr, otherwise it won't trigger an onChange
         // event if the same file is selected, removed, then selected again
-        inputRef.current.value = "";
+        inputRef.current.value = ""
       }
     }
 
-    lastFileItemRef.current = selectedFileItem;
-  }, [selectedFileItem, lastFileItemRef, inputRef]);
+    lastFileItemRef.current = selectedFileItem
+  }, [selectedFileItem, lastFileItemRef, inputRef])
 
   const handleFiles = React.useCallback(
     (files: FileList) => {
-      const file = files[0];
+      const file = files[0]
       if (file == null) {
-        return;
+        return
       }
 
       const fileItem = createObjectUrl
@@ -65,41 +65,47 @@ const FileUploadButton = ({
           }
         : {
             file,
-          };
-      handleFileItemChange(fileItem);
+          }
+      handleFileItemChange(fileItem)
     },
-    [createObjectUrl, handleFileItemChange],
-  );
+    [createObjectUrl, handleFileItemChange]
+  )
 
   const startDragView = () => {
-    setIsDragging(true);
-  };
+    setIsDragging(true)
+  }
   const endDragView = () => {
-    setIsDragging(false);
-  };
+    setIsDragging(false)
+  }
 
-  const handleDragStart = React.useCallback((e: React.DragEvent<HTMLButtonElement>) => {
-    e.stopPropagation();
-    e.preventDefault();
-    startDragView();
-  }, []);
-  const handleDragEnd = React.useCallback((e: React.DragEvent<HTMLButtonElement>) => {
-    e.stopPropagation();
-    e.preventDefault();
-    endDragView();
-  }, []);
+  const handleDragStart = React.useCallback(
+    (e: React.DragEvent<HTMLButtonElement>) => {
+      e.stopPropagation()
+      e.preventDefault()
+      startDragView()
+    },
+    []
+  )
+  const handleDragEnd = React.useCallback(
+    (e: React.DragEvent<HTMLButtonElement>) => {
+      e.stopPropagation()
+      e.preventDefault()
+      endDragView()
+    },
+    []
+  )
 
   const handleFileDrop = React.useCallback(
     (e: React.DragEvent<HTMLButtonElement>) => {
-      e.stopPropagation();
-      e.preventDefault();
+      e.stopPropagation()
+      e.preventDefault()
 
-      const dt = e.dataTransfer;
-      handleFiles(dt.files);
-      endDragView();
+      const dt = e.dataTransfer
+      handleFiles(dt.files)
+      endDragView()
     },
-    [handleFiles],
-  );
+    [handleFiles]
+  )
 
   return (
     <Box>
@@ -112,7 +118,7 @@ const FileUploadButton = ({
         // display="none"
         onChange={(e: React.FormEvent<HTMLInputElement>) => {
           if (e.currentTarget.files) {
-            handleFiles(e.currentTarget.files);
+            handleFiles(e.currentTarget.files)
           }
         }}
       />
@@ -127,7 +133,11 @@ const FileUploadButton = ({
         >
           {showImagePreview && (
             <Box position="relative">
-              <Image w="100%" border="1px solid #ccc" src={selectedFileItem.url} />
+              <Image
+                w="100%"
+                border="1px solid #ccc"
+                src={selectedFileItem.url}
+              />
               <Box
                 position="absolute"
                 px={2}
@@ -170,9 +180,9 @@ const FileUploadButton = ({
           width={width}
           variant="unstyled"
           css={css`
-            border: 1px dashed ${colors.nomusBlue};
+            border: 1px dashed ${colors.primaryBlue};
             background: white;
-            color: ${colors.nomusBlue};
+            color: ${colors.primaryBlue};
             display: flex;
             align-items: center;
             justify-content: center;
@@ -187,7 +197,7 @@ const FileUploadButton = ({
           `}
         >
           <SVG.Upload
-            color={colors.nomusBlue}
+            color={colors.primaryBlue}
             css={css`
               margin-right: 8px;
             `}
@@ -196,12 +206,12 @@ const FileUploadButton = ({
         </Button>
       )}
     </Box>
-  );
-};
+  )
+}
 
 FileUploadButton.defaultProps = {
   createObjectUrl: true,
   showImagePreview: false,
-};
+}
 
-export default FileUploadButton;
+export default FileUploadButton

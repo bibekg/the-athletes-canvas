@@ -1,6 +1,6 @@
-import * as React from "react";
-import { colors } from "styles";
-import { SVGProps } from "./types";
+import * as React from "react"
+import { colors } from "styles"
+import { SVGProps } from "./types"
 
 const Grid = ({ color, className }: SVGProps) => (
   <svg
@@ -20,10 +20,10 @@ const Grid = ({ color, className }: SVGProps) => (
       fill={color}
     />
   </svg>
-);
+)
 
 Grid.defaultProps = {
-  color: colors.nomusBlue,
-};
+  color: colors.primaryBlue,
+}
 
-export default Grid;
+export default Grid

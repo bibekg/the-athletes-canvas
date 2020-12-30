@@ -1,6 +1,6 @@
-import * as React from "react";
-import { colors } from "styles";
-import { SVGProps } from "./types";
+import * as React from "react"
+import { colors } from "styles"
+import { SVGProps } from "./types"
 
 const Sync = ({ color, className }: SVGProps) => (
   <svg
@@ -20,10 +20,10 @@ const Sync = ({ color, className }: SVGProps) => (
       fill={color}
     />
   </svg>
-);
+)
 
 Sync.defaultProps = {
-  color: colors.nomusBlue,
-};
+  color: colors.primaryBlue,
+}
 
-export default Sync;
+export default Sync

@@ -1,9 +1,14 @@
-import * as React from "react";
-import { colors } from "styles";
-import { SVGProps } from "./types";
+import * as React from "react"
+import { colors } from "styles"
+import { SVGProps } from "./types"
 
 const Options = ({ color, className }: SVGProps) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
     <path
       fillRule="evenodd"
       clipRule="evenodd"
@@ -17,10 +22,10 @@ const Options = ({ color, className }: SVGProps) => (
       fill={color}
     />
   </svg>
-);
+)
 
 Options.defaultProps = {
-  color: colors.nomusBlue,
-};
+  color: colors.primaryBlue,
+}
 
-export default Options;
+export default Options
