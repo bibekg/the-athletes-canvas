@@ -216,7 +216,7 @@ export const MapViewer = ({ activities }: Props) => {
     thickness: 0.5,
     mapResolution: resolutionOptions[1].value,
     pathResolution: 1,
-    bgColor: { r: 255, g: 255, b: 255, a: 0 },
+    bgColor: { r: 255, g: 255, b: 255, a: 1.0 },
     pathColor: { r: 0, g: 0, b: 0, a: 0.2 },
     useCustomCoords: optionsFromQueryParams.useCustomCoords ?? false,
     ...fallbackGeoBounds,
