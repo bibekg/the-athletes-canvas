@@ -3,7 +3,7 @@ import * as React from "react"
 import { ActivityType } from "types/strava/enums"
 
 const MAX_WIDTH_PX = 30000
-const RESOLUTION_SCALING_FACTOR = 20000
+const RESOLUTION_SCALING_FACTOR = 50000
 
 const normalizeLat = (lat: number) => 90 - lat
 const normalizeLon = (lon: number) => 180 + lon

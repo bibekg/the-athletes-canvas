@@ -139,6 +139,40 @@ const getGeoBoundsForRoutes = (routes: Array<Route>): GeoBounds | null => {
 
 const toTimestamp = (d: Date | string) => new Date(d).getTime() / 1000
 
+const optionsFromQueryParams = (() => {
+  // To retain SSR compatibility
+  if (typeof window === "undefined") {
+    return {}
+  }
+  const params = new URLSearchParams(window.location.search)
+  const leftLon = params.get("leftLon")
+  const rightLon = params.get("rightLon")
+  const upperLat = params.get("upperLat")
+  const lowerLat = params.get("lowerLat")
+  const useCustomCoords =
+    leftLon != null && rightLon != null && upperLat != null && lowerLat != null
+
+  return {
+    startDate: params.get("startDate") ?? undefined,
+    endDate: params.get("endDate") ?? undefined,
+    activityTypes: (params
+      .get("activityTypes")
+      ?.split(",")
+      .filter((at) => hasOwnProperty(activityTypeEmojis, at)) ?? undefined) as
+      | Array<ActivityType>
+      | undefined,
+    geoBounds: useCustomCoords
+      ? {
+          leftLon: Number(leftLon),
+          rightLon: Number(rightLon),
+          upperLat: Number(upperLat),
+          lowerLat: Number(lowerLat),
+        }
+      : null,
+    useCustomCoords: useCustomCoords,
+  }
+})()
+
 export const MapViewer = ({ activities }: Props) => {
   const [imageResolution, setImageResolution] = React.useState<{
     width: number
@@ -154,7 +188,7 @@ export const MapViewer = ({ activities }: Props) => {
   ])
 
   const geoBoundsForProvidedRoutes = React.useMemo(
-    () => getGeoBoundsForRoutes(routes) ?? { lowerLat: -90 },
+    () => getGeoBoundsForRoutes(routes),
     [routes]
   )
 
@@ -171,9 +205,12 @@ export const MapViewer = ({ activities }: Props) => {
     }))
 
   const defaultValues: CustomizationOptions = {
-    activityTypes: activityTypeOptions.map((o) => o.value),
-    startDate: "2020-01-01",
-    endDate: new Date().toISOString().substr(0, 10),
+    activityTypes:
+      optionsFromQueryParams.activityTypes ??
+      activityTypeOptions.map((o) => o.value),
+    startDate: optionsFromQueryParams.startDate ?? "2020-01-01",
+    endDate:
+      optionsFromQueryParams.endDate ?? new Date().toISOString().substr(0, 10),
     animationDuration:
       animationDurationOptions.find((opt) => opt.label === "Quick")?.value ?? 0,
     thickness: 0.5,
@@ -181,10 +218,11 @@ export const MapViewer = ({ activities }: Props) => {
     pathResolution: 1,
     bgColor: { r: 255, g: 255, b: 255, a: 0 },
     pathColor: { r: 0, g: 0, b: 0, a: 0.2 },
-    useCustomCoords: false,
+    useCustomCoords: optionsFromQueryParams.useCustomCoords ?? false,
     ...fallbackGeoBounds,
     // This may or may not be present and override fallbackGeoBounds
     ...geoBoundsForProvidedRoutes,
+    ...optionsFromQueryParams.geoBounds,
   }
   const [mode, setMode] = React.useState<"routes" | "visualization">("routes")
   const {
@@ -290,21 +328,38 @@ export const MapViewer = ({ activities }: Props) => {
     resolution,
   }) => {
     setImageResolution(resolution)
-    console.log("false")
     setIsDrawing(false)
   }
 
   const onSubmit = (data: CustomizationOptions) => {
+    // Update URL query params to reflect new state
+    const queryParams = new URLSearchParams(window.location.search)
+    queryParams.set("startDate", values.startDate)
+    queryParams.set("endDate", values.endDate)
+    queryParams.set("activityTypes", values.activityTypes.join(","))
+    if (values.useCustomCoords) {
+      queryParams.set("leftLon", String(values.leftLon))
+      queryParams.set("rightLon", String(values.rightLon))
+      queryParams.set("upperLat", String(values.upperLat))
+      queryParams.set("lowerLat", String(values.lowerLat))
+    } else {
+      queryParams.delete("leftLon")
+      queryParams.delete("rightLon")
+      queryParams.delete("upperLat")
+      queryParams.delete("lowerLat")
+    }
+    window.history.replaceState(null, "", `?${queryParams.toString()}`)
+
     const newProps = createRouteMapProps(data)
     setPropsToPass(newProps)
-    console.log("true")
     setIsDrawing(true)
   }
 
   return (
     <Box
       display="grid"
-      gridTemplateColumns="350px 300px 1fr"
+      gridTemplateColumns="380px 300px 1fr"
+      gridTemplateRows="auto auto 1fr"
       height="100vh"
       gridTemplateAreas={`
       "header header map"
@@ -639,11 +694,13 @@ export const MapViewer = ({ activities }: Props) => {
                 width="100%"
                 bg="white"
               >
-                <Text.Body2>{route.name}</Text.Body2>
-                <Text.Body3>
+                <Text.Body2>
+                  {activityTypeEmojis[route.type]} {route.name}
+                </Text.Body2>
+                <Text.Body3 color={colors.lightGray}>
                   {dateFormat(route.startDate, "mmmm d, yyyy 'at' h:MM TT")}
                 </Text.Body3>
-                <Text.Body3>{getActivityTypeLabel(route.type)}</Text.Body3>
+                {/* <Text.Body3>{getActivityTypeLabel(route.type)}</Text.Body3> */}
               </Box>
             </Link>
           ))}
@@ -692,12 +749,14 @@ export const MapViewer = ({ activities }: Props) => {
         gridArea="map"
         flexGrow={0}
         width="100%"
+        height="100%"
+        overflowY="hidden"
         display="flex"
         justifyContent="center"
         alignItems="center"
         p={3}
         borderLeft={`1px solid ${colors.africanElephant}`}
-        bg={propsToPass.bgColor}
+        bg={colors.offWhite}
       >
         <RouteMap
           {...propsToPass}
