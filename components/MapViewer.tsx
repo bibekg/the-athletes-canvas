@@ -8,6 +8,8 @@ import {
   Props as RouteMapProps,
   Route,
   RouteMap,
+  RouteMapDoneDrawingCallback,
+  RouteMapRef,
 } from "components/RouteMap"
 import * as Text from "components/Text"
 import dateFormat from "dateformat"
@@ -35,6 +37,12 @@ const fallbackGeoBounds: GeoBounds = {
   lowerLat: -90,
 }
 
+const resolutionOptions = [
+  { value: 0.1, label: "Low" },
+  { value: 0.25, label: "Medium" },
+  { value: 1.0, label: "High" },
+]
+
 interface ActivityFilteringOptions {
   startDate: string
   endDate: string
@@ -43,7 +51,7 @@ interface ActivityFilteringOptions {
 interface VisualizationOptions extends GeoBounds {
   useCustomCoords: boolean
   thickness: number
-  duration: number
+  animationDuration: number
   mapResolution: number
   pathResolution: number
   bgColor: RGBColor | null
@@ -65,6 +73,13 @@ const activityTypeOptionsWithEmoji = [
   { value: ActivityType.Hike, label: "🥾 Hike" },
   { value: ActivityType.Workout, label: "🏋️ Workout" },
   { value: ActivityType.Swim, label: "🏊 Swim" },
+]
+
+const animationDurationOptions = [
+  { value: 0, label: "None" },
+  { value: 100, label: "Quick" },
+  { value: 300, label: "Medium" },
+  { value: 500, label: "Slow" },
 ]
 
 const activitiesToRoutes = (
@@ -128,6 +143,15 @@ const getGeoBoundsForRoutes = (routes: Array<Route>): GeoBounds | null => {
 const toTimestamp = (d: Date | string) => new Date(d).getTime() / 1000
 
 export const MapViewer = ({ activities }: Props) => {
+  const [imageResolution, setImageResolution] = React.useState<{
+    width: number
+    height: number
+  } | null>(null)
+
+  const [isDrawing, setIsDrawing] = React.useState(true)
+
+  const routeMapRef = React.useRef<RouteMapRef | null>(null)
+
   const routes = React.useMemo(() => activitiesToRoutes(activities), [
     activities,
   ])
@@ -156,10 +180,11 @@ export const MapViewer = ({ activities }: Props) => {
     activityTypes: activityTypeOptions.map((o) => o.value),
     startDate: "2020-01-01",
     endDate: new Date().toISOString().substr(0, 10),
-    duration: 0,
-    thickness: 5,
-    mapResolution: 5000,
-    pathResolution: 0.5,
+    animationDuration:
+      animationDurationOptions.find((opt) => opt.label === "Quick")?.value ?? 0,
+    thickness: 0.5,
+    mapResolution: resolutionOptions[1].value,
+    pathResolution: 1,
     bgColor: { r: 255, g: 255, b: 255, a: 0 },
     pathColor: { r: 0, g: 0, b: 0, a: 0.2 },
     useCustomCoords: false,
@@ -254,7 +279,7 @@ export const MapViewer = ({ activities }: Props) => {
         upperLat: values.upperLat,
         lowerLat: values.lowerLat,
       },
-      duration: options.duration,
+      animationDuration: options.animationDuration,
       thickness: options.thickness,
       pathResolution: options.pathResolution,
       mapResolution: options.mapResolution,
@@ -267,9 +292,19 @@ export const MapViewer = ({ activities }: Props) => {
     createRouteMapProps(defaultValues)
   )
 
+  const handleRouteMapDoneDrawing: RouteMapDoneDrawingCallback = ({
+    resolution,
+  }) => {
+    setImageResolution(resolution)
+    console.log("false")
+    setIsDrawing(false)
+  }
+
   const onSubmit = (data: CustomizationOptions) => {
     const newProps = createRouteMapProps(data)
     setPropsToPass(newProps)
+    console.log("true")
+    setIsDrawing(true)
   }
 
   return (
@@ -302,27 +337,6 @@ export const MapViewer = ({ activities }: Props) => {
             to a PNG.
           </Text.Body3>
         </Box>
-        {activities == null && {}}
-        {/* SegmentedController */}
-        <Box p={3} width="100%" bg="white" flexGrow={0}>
-          <SegmentedController
-            tabs={[
-              {
-                id: "routes",
-                title: "Select activities",
-                actionType: TabActionType.OnClick,
-                onClick: () => setMode("routes"),
-              },
-              {
-                id: "visualization",
-                title: "Configure visualization",
-                actionType: TabActionType.OnClick,
-                onClick: () => setMode("visualization"),
-              },
-            ]}
-            selectedTabId={mode}
-          />
-        </Box>
 
         {/* Options */}
         <Box
@@ -330,8 +344,30 @@ export const MapViewer = ({ activities }: Props) => {
           overflow="auto"
           borderTop={`1px solid ${colors.africanElephant}`}
           borderBottom={`1px solid ${colors.africanElephant}`}
-          py={3}
+          p={3}
         >
+          {/* SegmentedController */}
+
+          <Box mb={3}>
+            <SegmentedController
+              tabs={[
+                {
+                  id: "routes",
+                  title: "Select activities",
+                  actionType: TabActionType.OnClick,
+                  onClick: () => setMode("routes"),
+                },
+                {
+                  id: "visualization",
+                  title: "Configure visualization",
+                  actionType: TabActionType.OnClick,
+                  onClick: () => setMode("visualization"),
+                },
+              ]}
+              selectedTabId={mode}
+            />
+          </Box>
+
           <Form.Form onSubmit={handleSubmit(onSubmit)} id="customizations">
             {/* Activity filtering options */}
             <Box
@@ -351,7 +387,6 @@ export const MapViewer = ({ activities }: Props) => {
               flexShrink={0}
               flexGrow={0}
               width="100%"
-              p={3}
             >
               <Form.Item gridArea="startDate">
                 <Form.Label>Start date</Form.Label>
@@ -377,11 +412,11 @@ export const MapViewer = ({ activities }: Props) => {
               </Form.Item>
               <Form.Item gridArea="useCustomCoords">
                 <Form.Label>Use custom coordinate bounds?</Form.Label>
-                <Text.Body3>
+                <Form.FieldDescription>
                   By default, the coordinate bounds are automatically determined
                   to fit the selected activities. If you'd like, you can
                   override the bounds yourself.
-                </Text.Body3>
+                </Form.FieldDescription>
                 <Form.Input
                   name="useCustomCoords"
                   type="checkbox"
@@ -390,7 +425,7 @@ export const MapViewer = ({ activities }: Props) => {
               </Form.Item>
 
               <Form.Item gridArea="leftLon">
-                <Form.Label>Left Longituide</Form.Label>
+                <Form.Label>Left Longitude</Form.Label>
                 <Form.Input
                   name="leftLon"
                   type="number"
@@ -402,7 +437,7 @@ export const MapViewer = ({ activities }: Props) => {
                 />
               </Form.Item>
               <Form.Item gridArea="rightLon">
-                <Form.Label>Right Longituide</Form.Label>
+                <Form.Label>Right Longitude</Form.Label>
                 <Form.Input
                   name="rightLon"
                   type="number"
@@ -443,10 +478,11 @@ export const MapViewer = ({ activities }: Props) => {
             <Box
               display={mode === "visualization" ? "grid" : "none"}
               gridTemplateAreas={`
-                  "duration thickness"
-                  "mapResolution pathResolution"
-                  "bgColor bgColor"
-                  "pathColor pathColor"
+                "animationDuration animationDuration"
+                "mapResolution mapResolution"
+                "thickness thickness"
+                "bgColor bgColor"
+                "pathColor pathColor"
                 `}
               gridTemplateColumns="1fr 1fr"
               gridTemplateRows="auto"
@@ -456,51 +492,81 @@ export const MapViewer = ({ activities }: Props) => {
               flexShrink={0}
               flexGrow={0}
               width="100%"
-              p={3}
             >
-              <Form.Item gridArea="duration">
-                <Form.Label>Animation Duration</Form.Label>
-                <Form.Input
-                  name="duration"
-                  type="range"
+              <Form.Item gridArea="animationDuration">
+                <Form.Label>Animation</Form.Label>
+                <Form.FieldDescription>
+                  Controls whether (and at what speed) the rendering process
+                  will gradually animate your paths being drawn.
+                </Form.FieldDescription>
+                <Form.Select
+                  name="animationDuration"
                   ref={register({ valueAsNumber: true })}
-                  min={0}
-                  max={3000}
-                  step={250}
-                />
+                >
+                  {animationDurationOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </Form.Select>
               </Form.Item>
               <Form.Item gridArea="thickness">
                 <Form.Label>Line Thickness</Form.Label>
+                <Form.FieldDescription>
+                  Controls how thick the route path lines are.
+                </Form.FieldDescription>
                 <Form.Input
                   name="thickness"
                   type="range"
                   ref={register({ valueAsNumber: true })}
-                  min={1}
-                  max={20}
+                  min={0.1}
+                  max={1}
+                  step={0.1}
                 />
               </Form.Item>
               <Form.Item gridArea="mapResolution">
                 <Form.Label>Map Resolution</Form.Label>
-                <Form.Input
+                <Form.FieldDescription>
+                  Controls the resolution of the image, relative to the amount
+                  of geographical area the map covers. The maximum width is
+                  20,000 pixels.
+                </Form.FieldDescription>
+
+                <Form.Select
                   name="mapResolution"
-                  type="range"
                   ref={register({ valueAsNumber: true })}
-                  min={100}
-                  max={100000}
-                  step={100}
-                />
+                >
+                  {resolutionOptions.map((item) => (
+                    <option key={item.value} value={item.value}>
+                      {item.label}
+                    </option>
+                  ))}
+                </Form.Select>
+                {imageResolution && (
+                  <Text.Body3 mt={2}>
+                    Current Resolution:{" "}
+                    <span css={css({ fontWeight: 500 })}>
+                      {imageResolution.width} x {imageResolution.height}
+                    </span>
+                  </Text.Body3>
+                )}
               </Form.Item>
-              <Form.Item gridArea="pathResolution">
+              {/* <Form.Item gridArea="pathResolution">
                 <Form.Label>Path Resolution</Form.Label>
-                <Form.Input
+                <Form.FieldDescription>
+                  Controls how many of the points in the path to consider.
+                </Form.FieldDescription>
+                <Form.Select
                   name="pathResolution"
-                  type="range"
                   ref={register({ valueAsNumber: true })}
-                  min={0.1}
-                  max={1.0}
-                  step={0.1}
-                />
-              </Form.Item>
+                >
+                  {resolutionOptions.map((item) => (
+                    <option key={item.value} value={item.value}>
+                      {item.label}
+                    </option>
+                  ))}
+                </Form.Select>
+              </Form.Item> */}
               <Form.Item gridArea="bgColor">
                 <Form.Label>Background Color</Form.Label>
                 <Controller
@@ -559,15 +625,41 @@ export const MapViewer = ({ activities }: Props) => {
         </Box>
 
         <Box bg="white" p={3}>
-          <Button
-            mb={1}
-            size="big"
-            type="submit"
-            width="100%"
-            form="customizations"
-          >
-            Re-render map
-          </Button>
+          {isDrawing && values.animationDuration !== 0 ? (
+            <Button
+              // There's a weird React bug(?) that was causing this button being clicked to trigger a form submission (the other button's job)
+              // Requires specifying key to fix. See https://github.com/facebook/react/issues/8554 for more details.
+              key="stop"
+              size="big"
+              width="100%"
+              type="button"
+              variant="danger"
+              form="none"
+              onClick={() => {
+                routeMapRef.current?.cancelDrawing()
+                setIsDrawing(false)
+              }}
+            >
+              Stop drawing
+            </Button>
+          ) : (
+            <Button
+              mb={1}
+              key="update"
+              type="submit"
+              size="big"
+              width="100%"
+              form="customizations"
+              onClick={() => {
+                console.log("clicked submit")
+              }}
+              disabled={isDrawing}
+              inProgress={isDrawing}
+              inProgressText="Drawing..."
+            >
+              Re-draw map
+            </Button>
+          )}
         </Box>
       </Box>
 
@@ -583,6 +675,8 @@ export const MapViewer = ({ activities }: Props) => {
       >
         <RouteMap
           {...propsToPass}
+          ref={routeMapRef}
+          onDoneDrawing={handleRouteMapDoneDrawing}
           canvasStyles={css({
             border: `20px solid ${colors.midnightGray}`,
             maxHeight: "100%",
@@ -598,6 +692,7 @@ export const MapViewer = ({ activities }: Props) => {
         display="grid"
         gridTemplateColumns="1fr"
         gridTemplateRows="auto 1fr"
+        bg={colors.offWhite}
       >
         <Text.SectionHeader p={3}>
           {routesToRender.length} Activities
@@ -608,15 +703,18 @@ export const MapViewer = ({ activities }: Props) => {
           flex={0}
           overflowY="auto"
           p={3}
+          boxShadow={shadows.inner}
         >
           {routesToRender.map((route) => (
             <Box
+              key={route.id}
               p={2}
               mb={2}
               flexShrink={0}
               boxShadow={shadows.knob}
               borderRadius={2}
               width="100%"
+              bg="white"
             >
               <Text.Body2>{route.name}</Text.Body2>
               <Text.Body3>
@@ -627,7 +725,7 @@ export const MapViewer = ({ activities }: Props) => {
         </Box>
       </Box>
 
-      <Box position="fixed" zIndex={1} top="10px" right="10px" width="100px">
+      <Box position="fixed" zIndex={1} bottom="10px" right="10px" width="100px">
         <Image src="/images/powered-by-strava-light.svg" />
       </Box>
     </Box>

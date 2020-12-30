@@ -1,7 +1,7 @@
 import Head from "next/head"
 import { css, Global } from "@emotion/react"
 
-function MyApp({ Component, pageProps }) {
+function MyApp({ Component, pageProps }: any) {
   return (
     <>
       <Head>
