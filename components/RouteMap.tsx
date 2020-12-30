@@ -169,23 +169,23 @@ export const RouteMap = React.forwardRef(
     const renderRoutes = async (routesToRender: Array<Route>) => {
       const canvas = canvasRef.current
       if (canvas == null) return null
+      const canvasContext = canvas.getContext("2d")
 
       // Create a new context to paint the bg with
-      const bgContext = canvas.getContext("2d")
-      if (bgContext == null) return null
+      if (canvasContext == null) return null
       // Start with a blank canvas
-      bgContext.clearRect(0, 0, canvas.width, canvas.height)
+      canvasContext.clearRect(0, 0, canvas.width, canvas.height)
 
       // Color the backround if one is specified
       if (bgColor) {
-        bgContext.fillStyle = bgColor
-        bgContext.fillRect(0, 0, canvas.width, canvas.height)
+        canvasContext.fillStyle = bgColor
+        canvasContext.fillRect(0, 0, canvas.width, canvas.height)
       }
 
       drawingInProgress.current = true
+
       for (const route of routesToRender) {
-        const routeContext = canvas.getContext("2d")
-        if (routeContext == null) return null
+        if (canvasContext == null) return null
 
         if (pathResolution <= 0 || pathResolution > 1) {
           throw new Error(
@@ -202,36 +202,37 @@ export const RouteMap = React.forwardRef(
               i === route.waypoints.length - 1
           )
           .map((point) =>
-            coordinatesToBoundedCanvasPoint(point, routeContext, geoBounds)
+            coordinatesToBoundedCanvasPoint(point, canvasContext, geoBounds)
           )
 
         // Have the line width be 1/1000 of canvas width times user-specified thickness multiplier
-        routeContext.lineWidth = (routeContext.canvas.width / 1000) * thickness
-        routeContext.lineCap = "round"
-        routeContext.lineJoin = "round"
-        routeContext.strokeStyle = pathColor
+        canvasContext.lineWidth =
+          (canvasContext.canvas.width / 1000) * thickness
+        canvasContext.lineCap = "round"
+        canvasContext.lineJoin = "round"
+        canvasContext.strokeStyle = pathColor
 
         if (animationDuration == null || Number(animationDuration) === 0) {
           // Start the path off by moving to the first point
-          routeContext.moveTo(canvasPoints[0].x, canvasPoints[0].y)
-          routeContext.beginPath()
+          canvasContext.moveTo(canvasPoints[0].x, canvasPoints[0].y)
+          canvasContext.beginPath()
           for (const point of canvasPoints.slice(1)) {
-            routeContext.lineTo(point.x, point.y)
-            routeContext.moveTo(point.x, point.y)
+            canvasContext.lineTo(point.x, point.y)
+            canvasContext.moveTo(point.x, point.y)
           }
-          routeContext.stroke()
+          canvasContext.stroke()
         } else {
-          routeContext.moveTo(canvasPoints[0].x, canvasPoints[0].y)
+          canvasContext.moveTo(canvasPoints[0].x, canvasPoints[0].y)
           await animateAddingPoints(
             canvasPoints,
             animationDuration,
             (pointsToRenderThisFrame: Array<CanvasPoint>) => {
-              routeContext.beginPath()
+              canvasContext.beginPath()
               for (const point of pointsToRenderThisFrame) {
-                routeContext.lineTo(point.x, point.y)
-                routeContext.moveTo(point.x, point.y)
+                canvasContext.lineTo(point.x, point.y)
+                canvasContext.moveTo(point.x, point.y)
               }
-              routeContext.stroke()
+              canvasContext.stroke()
             }
           )
         }
