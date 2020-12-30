@@ -51,6 +51,7 @@ const coordinatesToBoundedCanvasPoint = (
 }
 
 export type Waypoint = Coords
+export type CanvasPoint = { x: number; y: number }
 
 export type Route = {
   id: any
@@ -106,6 +107,8 @@ export const RouteMap = React.forwardRef(
     const canvasRef = React.useRef<HTMLCanvasElement | null>(null)
     // const [drawingInProgress, setDrawingInProgress] = React.useState(false)
     const drawingInProgress = React.useRef(false)
+    const routesStarted = React.useRef<Record<string, boolean>>({})
+
     // A pretty big hammer -- may need to nuance this at some point
     const cancelPendingAnimationFrames = () => {
       for (var i = 1; i < 99999; i++) {
@@ -124,78 +127,32 @@ export const RouteMap = React.forwardRef(
       })
     )
 
-    const addPath = (
-      from: Coords,
-      to: Coords,
-      context: CanvasRenderingContext2D
+    const animateAddingPoints = async (
+      points: Array<CanvasPoint>,
+      duration: number,
+      stepHandler: (points: Array<CanvasPoint>) => void
     ) => {
-      const { x: fromX, y: fromY } = coordinatesToBoundedCanvasPoint(
-        from,
-        context,
-        geoBounds
-      )
-      const { x: toX, y: toY } = coordinatesToBoundedCanvasPoint(
-        to,
-        context,
-        geoBounds
-      )
-
-      // Have the line width be 1/1000 of canvas width times user-specified thickness multiplier
-      context.lineWidth = (context.canvas.width / 1000) * thickness
-      context.lineCap = "round"
-      context.lineJoin = "round"
-      context.strokeStyle = pathColor
-
-      context.beginPath()
-      context.moveTo(fromX, fromY)
-      context.lineTo(toX, toY)
-      context.stroke()
-    }
-
-    const animateRenderWaypoints = async (
-      waypoints: Array<Waypoint>,
-      context: CanvasRenderingContext2D
-    ) => {
-      const numPointsToRender = waypoints.length
-      const delay = (animationDuration / numPointsToRender) * 0.8
+      const delay = (duration / points.length) * 0.8
 
       return new Promise<void>((resolve) => {
-        let waypointIndex = 1
-        let lastPointAddedAtTime: number | null = null
+        let pointIndex = 0
+        let lastPointAddedAtTime: number = performance.now()
         let lastAnimationFrame: number | null = null
 
         let step: FrameRequestCallback | null = null
         step = (timestamp: number) => {
-          // If this is the first time we're adding points for this id, just add 1
-          if (lastPointAddedAtTime == null) {
-            const wp = waypoints[waypointIndex]
-            addPath(
-              waypoints[waypointIndex - 1],
-              waypoints[waypointIndex],
-              context
-            )
-            waypointIndex += 1
-            lastPointAddedAtTime = performance.now()
-          } else {
-            const timeDiff = timestamp - lastPointAddedAtTime
-            if (timeDiff >= delay) {
-              const numPointsToRenderThisFrame = Math.ceil(timeDiff / delay)
-              for (let i = 0; i < numPointsToRenderThisFrame; i += 1) {
-                const wp = waypoints[waypointIndex]
-                if (wp) {
-                  addPath(
-                    waypoints[waypointIndex - 1],
-                    waypoints[waypointIndex],
-                    context
-                  )
-                  waypointIndex += 1
-                  lastPointAddedAtTime = performance.now()
-                }
-              }
-            }
-          }
+          const timeDiff = timestamp - lastPointAddedAtTime
+          const numPointsToRenderThisFrame = Math.ceil(timeDiff / delay)
+          const pointsToRenderThisFrame = points
+            .slice(pointIndex, pointIndex + numPointsToRenderThisFrame)
+            .filter((point) => point != null)
 
-          if (waypointIndex < waypoints.length) {
+          stepHandler(pointsToRenderThisFrame)
+
+          pointIndex += numPointsToRenderThisFrame
+          lastPointAddedAtTime = performance.now()
+
+          if (pointIndex < points.length) {
             if (step && drawingInProgress.current)
               lastAnimationFrame = window.requestAnimationFrame(step)
           } else {
@@ -237,28 +194,52 @@ export const RouteMap = React.forwardRef(
         }
         const renderEveryNthPoint = Math.ceil(1 / pathResolution)
 
-        const waypointsToRender = route.waypoints.filter(
-          (_: any, i: number) =>
-            i === 0 ||
-            i % renderEveryNthPoint === 0 ||
-            i === route.waypoints.length - 1
-        )
+        const canvasPoints = route.waypoints
+          .filter(
+            (_: any, i: number) =>
+              i === 0 ||
+              i % renderEveryNthPoint === 0 ||
+              i === route.waypoints.length - 1
+          )
+          .map((point) =>
+            coordinatesToBoundedCanvasPoint(point, routeContext, geoBounds)
+          )
+
+        // Have the line width be 1/1000 of canvas width times user-specified thickness multiplier
+        routeContext.lineWidth = (routeContext.canvas.width / 1000) * thickness
+        routeContext.lineCap = "round"
+        routeContext.lineJoin = "round"
+        routeContext.strokeStyle = pathColor
 
         if (animationDuration == null || Number(animationDuration) === 0) {
-          // Even with a 0 animationDuration, it'll probably animate since it takes so long to plot all those points
-          for (let i = 1; i < waypointsToRender.length; i += 1) {
-            addPath(
-              waypointsToRender[i - 1],
-              waypointsToRender[i],
-              routeContext
-            )
+          // Start the path off by moving to the first point
+          routeContext.moveTo(canvasPoints[0].x, canvasPoints[0].y)
+          routeContext.beginPath()
+          for (const point of canvasPoints.slice(1)) {
+            routeContext.lineTo(point.x, point.y)
+            routeContext.moveTo(point.x, point.y)
           }
+          routeContext.stroke()
         } else {
-          // Need to await here to make sure routes are rendered sequentially
-          // Otherwise it'll kick off all routes' renderings ~simultaneously
-          await animateRenderWaypoints(waypointsToRender, routeContext)
+          routeContext.moveTo(canvasPoints[0].x, canvasPoints[0].y)
+          await animateAddingPoints(
+            canvasPoints,
+            animationDuration,
+            (pointsToRenderThisFrame: Array<CanvasPoint>) => {
+              routeContext.beginPath()
+              for (const point of pointsToRenderThisFrame) {
+                routeContext.lineTo(point.x, point.y)
+                routeContext.moveTo(point.x, point.y)
+              }
+              routeContext.stroke()
+            }
+          )
         }
       }
+
+      // Done drawing, clear the routesStarted set so next draw has a freshly empty set
+      routesStarted.current = {}
+      console.log(`Done rendering ${routesToRender.length} routes`)
     }
 
     // Re-render the routes if props have changed
@@ -269,6 +250,7 @@ export const RouteMap = React.forwardRef(
       // Pull out the routes that are within the geoBounds
       // const filteredRoutes = routes.filter(filterRoutesForGeoBounds(geoBounds));
       renderRoutes(routes).then(() => {
+        console.log("executing then block")
         const canvas = canvasRef.current
 
         onDoneDrawing({

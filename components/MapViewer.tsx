@@ -140,8 +140,8 @@ const getGeoBoundsForRoutes = (routes: Array<Route>): GeoBounds | null => {
 const toTimestamp = (d: Date | string) => new Date(d).getTime() / 1000
 
 const optionsFromQueryParams = (() => {
-  // To retain SSR compatibility
-  if (typeof window === "undefined") {
+  // Skip this for server-side rendering calls
+  if (!process.browser) {
     return {}
   }
   const params = new URLSearchParams(window.location.search)
@@ -324,12 +324,13 @@ export const MapViewer = ({ activities }: Props) => {
     createRouteMapProps(defaultValues)
   )
 
-  const handleRouteMapDoneDrawing: RouteMapDoneDrawingCallback = ({
-    resolution,
-  }) => {
-    setImageResolution(resolution)
-    setIsDrawing(false)
-  }
+  const handleRouteMapDoneDrawing: RouteMapDoneDrawingCallback = React.useCallback(
+    ({ resolution }) => {
+      setImageResolution(resolution)
+      setIsDrawing(false)
+    },
+    [setImageResolution, setIsDrawing]
+  )
 
   const onSubmit = (data: CustomizationOptions) => {
     // Update URL query params to reflect new state
