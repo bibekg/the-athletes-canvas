@@ -12,18 +12,16 @@ const linkBaseStyles = (props: LinkStyleProps) => ({
 })
 
 interface LinkStyleProps extends SpaceProps, LayoutProps {
-  asButton?: boolean
-  // button variants are only used if asButton is true
   buttonStyle?: keyof typeof buttonlikeStyles.styleVariants
   buttonSize?: keyof typeof buttonlikeStyles.sizeVariants
   underline?: boolean
   color?: string
   overrideStyles?: any
 }
-
+React.createElement()
 // We sometimes want to style Links identically to the way we style
 // Buttons so this component creates an easy-use adapter via
-// the asButton, buttonStyle, and buttonSize props
+// the buttonStyle, and buttonSize props
 
 // We export both an internal and external link from this file
 // They are styled identically but are based on a different
@@ -33,7 +31,7 @@ const args = [
   space,
   layout,
   (props: LinkStyleProps) =>
-    props.asButton
+    props.buttonStyle || props.buttonSize
       ? {
           ...buttonlikeStyles.baseButtonStyles,
           // Mimic button variants with a "button-" prefix
@@ -61,9 +59,8 @@ const InternalLink = styled(NextLink, {
 })(...args)
 
 const defaultProps = {
-  asButton: false,
-  buttonStyle: "primary",
-  buttonSize: "normal",
+  buttonStyle: undefined,
+  buttonSize: undefined,
 } as const
 ExternalLink.defaultProps = defaultProps
 InternalLink.defaultProps = defaultProps
@@ -96,3 +93,5 @@ const UnifiedLink = ({ href, ref, ...props }: UnifiedLinkProps) => {
 
 export { ExternalLink, InternalLink, UnifiedLink as Link }
 export default UnifiedLink
+
+// const NewLink = styled(NextLink)

@@ -1,6 +1,7 @@
 import { css, SerializedStyles } from "@emotion/react"
 import * as React from "react"
-import { ActivityType } from "types/strava/enums"
+import { Coords, GeoBounds, Route } from "types/geo"
+import { FALLBACK_GEO_BOUNDS, getGeoBoundsForRoutes } from "utils/geo"
 
 const MAX_WIDTH_PX = 30000
 const RESOLUTION_SCALING_FACTOR = 50000
@@ -8,22 +9,10 @@ const RESOLUTION_SCALING_FACTOR = 50000
 const normalizeLat = (lat: number) => 90 - lat
 const normalizeLon = (lon: number) => 180 + lon
 
-interface Coords {
-  lat: number
-  lon: number
-}
-
 const normalizeCoordinates = ({ lat, lon }: Coords) => ({
   x: normalizeLon(lon),
   y: normalizeLat(lat),
 })
-
-export interface GeoBounds {
-  leftLon: number
-  rightLon: number
-  upperLat: number
-  lowerLat: number
-}
 
 // Determines where on the specified canvas a {lat, lon} pair corresponds to such that
 // the canvas represents a window into canvasBounds
@@ -50,16 +39,7 @@ const coordinatesToBoundedCanvasPoint = (
   return { x, y }
 }
 
-export type Waypoint = Coords
 export type CanvasPoint = { x: number; y: number }
-
-export type Route = {
-  id: any
-  name: string
-  startDate: Date
-  type: ActivityType
-  waypoints: Array<Waypoint>
-}
 
 export interface Resolution {
   width: number
@@ -245,6 +225,7 @@ export const RouteMap = React.forwardRef(
 
     // Re-render the routes if props have changed
     React.useEffect(() => {
+      console.log("rerendering routemap")
       // Cancel all animation frames since the props may have changed mid-animation
       cancelPendingAnimationFrames()
       drawingInProgress.current = false

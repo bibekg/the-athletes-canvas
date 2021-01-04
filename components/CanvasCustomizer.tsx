@@ -1,12 +1,9 @@
 import { css } from "@emotion/react"
-import { decode } from "@mapbox/polyline"
 import Box from "components/Box"
 import Button from "components/Button"
 import * as Form from "components/Form"
 import {
-  GeoBounds,
   Props as RouteMapProps,
-  Route,
   RouteMap,
   RouteMapDoneDrawingCallback,
   RouteMapRef,
@@ -18,9 +15,11 @@ import { AlphaPicker, CompactPicker, RGBColor } from "react-color"
 import { Controller, useForm } from "react-hook-form"
 import { colors } from "styles"
 import shadows from "styles/shadows"
+import { GeoBounds } from "types/geo"
 import { SummaryActivity } from "types/strava"
 import { ActivityType } from "types/strava/enums"
-import { activityTypeEmojis } from "utils/strava"
+import { getGeoBoundsForRoutes } from "utils/geo"
+import { activitiesToRoutes, activityTypeEmojis } from "utils/strava"
 import { hasOwnProperty } from "utils/typecheck"
 import Image from "./Image"
 import Link from "./Link"
@@ -28,9 +27,6 @@ import SegmentedController, { TabActionType } from "./SegmentedController"
 
 const makeColorString = (color: RGBColor) =>
   `rgba(${color.r}, ${color.g}, ${color.b}, ${color.a})`
-
-const roundToPlaces = (value: number, places: number) =>
-  Math.round(value * 10 ** places) / 10 ** places
 
 // The whole globe -- this might be unsafe since it'll make a gigantic canvas...
 const fallbackGeoBounds: GeoBounds = {
@@ -54,7 +50,6 @@ interface ActivityFilteringOptions {
 interface VisualizationOptions extends GeoBounds {
   useCustomCoords: boolean
   thickness: number
-  animationDuration: number
   mapResolution: number
   pathResolution: number
   bgColor: RGBColor | null
@@ -71,71 +66,6 @@ interface Props {
 
 const getActivityTypeLabel = (activityType: ActivityType) =>
   `${activityTypeEmojis[activityType]} ${activityType}`
-
-const animationDurationOptions = [
-  { value: 0, label: "None" },
-  { value: 100, label: "Quick" },
-  { value: 300, label: "Medium" },
-  { value: 500, label: "Slow" },
-]
-
-const activitiesToRoutes = (
-  activities: Array<SummaryActivity>,
-  activityFilterPredicate?: (activity: SummaryActivity) => boolean
-): Array<Route> => {
-  const filteredActivities = activityFilterPredicate
-    ? activities.filter(activityFilterPredicate)
-    : activities
-
-  return filteredActivities.reduce<Array<Route>>((arr, activity) => {
-    if (activity.map.summary_polyline) {
-      arr.push({
-        id: activity.id,
-        name: activity.name,
-        startDate: activity.start_date,
-        type: activity.type,
-        waypoints: decode(activity.map.summary_polyline).map(([lat, lon]) => ({
-          lat,
-          lon,
-        })),
-      })
-    }
-    return arr
-  }, [])
-}
-
-// Determine the GeoBounds that will contain all the routes with a small padding (5%)
-const getGeoBoundsForRoutes = (routes: Array<Route>): GeoBounds | null => {
-  let minLat = 90
-  let maxLat = -90
-  let minLon = 180
-  let maxLon = -180
-
-  let somePointsExist = false
-  routes.forEach((route) => {
-    route.waypoints.forEach((waypoint) => {
-      somePointsExist = true
-      minLat = Math.min(waypoint.lat, minLat)
-      maxLat = Math.max(waypoint.lat, maxLat)
-      minLon = Math.min(waypoint.lon, minLon)
-      maxLon = Math.max(waypoint.lon, maxLon)
-    })
-  })
-
-  const latRange = Math.abs(maxLat - minLat)
-  const lonRange = Math.abs(maxLon - minLon)
-  const latBuffer = 0.05 * latRange
-  const lonBuffer = 0.05 * lonRange
-
-  return somePointsExist
-    ? {
-        leftLon: roundToPlaces(minLon - lonBuffer, 4),
-        rightLon: roundToPlaces(maxLon + lonBuffer, 4),
-        upperLat: roundToPlaces(maxLat + latBuffer, 4),
-        lowerLat: roundToPlaces(minLat - latBuffer, 4),
-      }
-    : null
-}
 
 const toTimestamp = (d: Date | string) => new Date(d).getTime() / 1000
 
@@ -173,7 +103,7 @@ const optionsFromQueryParams = (() => {
   }
 })()
 
-export const MapViewer = ({ activities }: Props) => {
+export const CanvasCustomizer = ({ activities }: Props) => {
   const [imageResolution, setImageResolution] = React.useState<{
     width: number
     height: number
@@ -211,8 +141,6 @@ export const MapViewer = ({ activities }: Props) => {
     startDate: optionsFromQueryParams.startDate ?? "2020-01-01",
     endDate:
       optionsFromQueryParams.endDate ?? new Date().toISOString().substr(0, 10),
-    animationDuration:
-      animationDurationOptions.find((opt) => opt.label === "Quick")?.value ?? 0,
     thickness: 0.5,
     mapResolution: resolutionOptions[1].value,
     pathResolution: 1,
@@ -311,7 +239,6 @@ export const MapViewer = ({ activities }: Props) => {
         upperLat: values.upperLat,
         lowerLat: values.lowerLat,
       },
-      animationDuration: options.animationDuration,
       thickness: options.thickness,
       pathResolution: options.pathResolution,
       mapResolution: options.mapResolution,
@@ -531,7 +458,6 @@ export const MapViewer = ({ activities }: Props) => {
           <Box
             display={mode === "visualization" ? "grid" : "none"}
             gridTemplateAreas={`
-                "animationDuration animationDuration"
                 "mapResolution mapResolution"
                 "thickness thickness"
                 "bgColor bgColor"
@@ -546,23 +472,6 @@ export const MapViewer = ({ activities }: Props) => {
             flexGrow={0}
             width="100%"
           >
-            <Form.Item gridArea="animationDuration">
-              <Form.Label>Animation</Form.Label>
-              <Form.FieldDescription>
-                Controls whether (and at what speed) the rendering process will
-                gradually animate your paths being drawn.
-              </Form.FieldDescription>
-              <Form.Select
-                name="animationDuration"
-                ref={register({ valueAsNumber: true })}
-              >
-                {animationDurationOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </Form.Select>
-            </Form.Item>
             <Form.Item gridArea="thickness">
               <Form.Label>Line Thickness</Form.Label>
               <Form.FieldDescription>
@@ -709,7 +618,7 @@ export const MapViewer = ({ activities }: Props) => {
       </Box>
 
       <Box gridArea="buttons" bg="white" p={3}>
-        {isDrawing && values.animationDuration !== 0 ? (
+        {isDrawing ? (
           <Button
             // There's a weird React bug(?) that was causing this button being clicked to trigger a form submission (the other button's job)
             // Requires specifying key to fix. See https://github.com/facebook/react/issues/8554 for more details.
@@ -761,6 +670,8 @@ export const MapViewer = ({ activities }: Props) => {
       >
         <RouteMap
           {...propsToPass}
+          // No animations for the customizer... it's too awkward to support
+          animationDuration={0}
           ref={routeMapRef}
           onDoneDrawing={handleRouteMapDoneDrawing}
           canvasStyles={css({

@@ -95,10 +95,10 @@ export const styleVariants = {
     color: colors.primaryGreen,
     transition: buttonTransition,
     "&:hover": {
-      backgroundColor: colors.hoverBlue,
+      backgroundColor: polished.lighten(0.5)(colors.primaryGreen),
     },
     "&:active": {
-      backgroundColor: colors.activeBlue,
+      backgroundColor: polished.lighten(0.3)(colors.primaryGreen),
     },
     "&:focus": {
       boxShadow: `0 0 4px 0 ${colors.outlineBlue}`,

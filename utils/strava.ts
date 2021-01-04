@@ -1,4 +1,7 @@
 import { ActivityType } from "types/strava/enums"
+import { decode } from "@mapbox/polyline"
+import { SummaryActivity } from "types/strava"
+import { Route } from "types/geo"
 
 export const activityTypeEmojis = {
   [ActivityType.AlpineSki]: "⛷",
@@ -30,4 +33,29 @@ export const activityTypeEmojis = {
   [ActivityType.Windsurf]: "🏄",
   [ActivityType.Workout]: "🏋️",
   [ActivityType.Yoga]: "🧘",
+}
+
+export const activitiesToRoutes = (
+  activities: Array<SummaryActivity>,
+  activityFilterPredicate?: (activity: SummaryActivity) => boolean
+): Array<Route> => {
+  const filteredActivities = activityFilterPredicate
+    ? activities.filter(activityFilterPredicate)
+    : activities
+
+  return filteredActivities.reduce<Array<Route>>((arr, activity) => {
+    if (activity.map.summary_polyline) {
+      arr.push({
+        id: activity.id,
+        name: activity.name,
+        startDate: activity.start_date,
+        type: activity.type,
+        waypoints: decode(activity.map.summary_polyline).map(([lat, lon]) => ({
+          lat,
+          lon,
+        })),
+      })
+    }
+    return arr
+  }, [])
 }

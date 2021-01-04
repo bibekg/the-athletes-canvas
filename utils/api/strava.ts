@@ -14,11 +14,26 @@ interface StravaOAuthResponseType {
   athlete: SummaryAthlete
 }
 
-export const reauthenticate = async (
-  refreshToken: string,
+// Resolves to whether the token was refreshed
+export const ensureAuthenticated = async (
   req: NextApiRequest,
-  res: NextApiResponse
-): Promise<void> => {
+  res: NextApiResponse,
+  forceRefresh: boolean = false
+): Promise<boolean> => {
+  const accessToken = req.cookies["X-Access-Token"]
+  const refreshToken = req.cookies["X-Refresh-Token"]
+  const accessTokenExpiresAt = req.cookies["X-Refresh-Token"]
+
+  // Check if already authenticated and caller isn't requesting a force refresh
+  if (
+    accessToken &&
+    accessTokenExpiresAt &&
+    Number(accessTokenExpiresAt) > Date.now() &&
+    !forceRefresh
+  ) {
+    return false
+  }
+
   const response: AxiosResponse<StravaOAuthResponseType> = await axios({
     url: "https://www.strava.com/api/v3/oauth/token",
     method: "POST",
@@ -42,6 +57,7 @@ export const reauthenticate = async (
   })
 
   cookies.set("'X-Access-Token-Expires-At'", String(response.data.expires_at))
+  return true
 }
 
 export const authenticate = async (

@@ -1,6 +1,6 @@
 import { createHandler } from "utils/api"
 import axios from "axios"
-import { reauthenticate } from "utils/api/strava"
+import { ensureAuthenticated } from "utils/api/strava"
 
 export default createHandler(async (req, res) => {
   const accessToken = req.cookies["X-Access-Token"]
@@ -40,7 +40,7 @@ export default createHandler(async (req, res) => {
       }
 
       try {
-        await reauthenticate(refreshToken, req, res)
+        await ensureAuthenticated(req, res)
         // Now try again
         await fetchActivitiesAndRespondToClient()
       } catch (err) {
