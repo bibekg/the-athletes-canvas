@@ -1,7 +1,6 @@
 import { css, SerializedStyles } from "@emotion/react"
 import * as React from "react"
 import { Coords, GeoBounds, Route } from "types/geo"
-import { FALLBACK_GEO_BOUNDS, getGeoBoundsForRoutes } from "utils/geo"
 
 const MAX_WIDTH_PX = 30000
 const RESOLUTION_SCALING_FACTOR = 50000

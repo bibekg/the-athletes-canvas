@@ -4,7 +4,6 @@ import Button from "components/Button"
 import Image from "components/Image"
 import { Link } from "components/Link"
 import { RouteMap } from "components/RouteMap"
-import Spinner from "components/Spinner"
 import * as Text from "components/Text"
 import Head from "next/head"
 import React from "react"
@@ -26,16 +25,7 @@ stravaOauthUrlParams.set("scope", "activity:read_all")
 const stravaOauthURL = `https://www.strava.com/oauth/authorize?${stravaOauthUrlParams.toString()}`
 
 export default function App() {
-  // const [loggedIn, setLoggedIn] = React.useState<boolean | null>(null) // null = TBD
   const { activities, isLoggedIn } = useStravaData()
-
-  // React.useEffect(() => {
-  //   const checkLogin = async () => {
-  //     const response = await fetch('/api/auth/check-login')
-  //     setLoggedIn(response.ok)
-  //   }
-  //   checkLogin()
-  // })
 
   const routeMapProps = React.useMemo(() => {
     if (activities) {
@@ -93,8 +83,8 @@ export default function App() {
           alignItems="center"
           justifyContent="center"
           position="relative"
-          width="100%"
-          height="100%"
+          p={3}
+          bg={colors.offWhite}
         >
           <Text.BrandHeader color={colors.primaryGreen}>
             The Athlete's Canvas
