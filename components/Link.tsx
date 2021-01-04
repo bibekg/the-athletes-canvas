@@ -18,7 +18,7 @@ interface LinkStyleProps extends SpaceProps, LayoutProps {
   color?: string
   overrideStyles?: any
 }
-React.createElement()
+
 // We sometimes want to style Links identically to the way we style
 // Buttons so this component creates an easy-use adapter via
 // the buttonStyle, and buttonSize props
@@ -93,5 +93,3 @@ const UnifiedLink = ({ href, ref, ...props }: UnifiedLinkProps) => {
 
 export { ExternalLink, InternalLink, UnifiedLink as Link }
 export default UnifiedLink
-
-// const NewLink = styled(NextLink)
