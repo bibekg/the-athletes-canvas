@@ -18,8 +18,6 @@ const baseUrl =
     ? "https://athlete-canvas.vercel.app"
     : `http://localhost:${process.env.PORT}`
 
-console.log({ baseUrl })
-
 const stravaOauthUrlParams = new URLSearchParams()
 stravaOauthUrlParams.set("client_id", "58724")
 stravaOauthUrlParams.set("redirect_uri", baseUrl + "/api/auth/strava-callback")
