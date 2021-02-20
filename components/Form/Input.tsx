@@ -1,6 +1,6 @@
-import styled from "@emotion/styled";
-import { FieldError } from "react-hook-form";
-import theme from "styles/theme";
+import styled from "@emotion/styled"
+import { FieldError } from "react-hook-form"
+import theme from "styles/theme"
 import {
   border,
   BorderProps,
@@ -22,7 +22,7 @@ import {
   SpaceProps,
   typography,
   TypographyProps,
-} from "styled-system";
+} from "styled-system"
 
 interface InputProps
   extends SpaceProps,
@@ -35,8 +35,8 @@ interface InputProps
     FontSizeProps,
     LineHeightProps,
     TypographyProps {
-  as?: string;
-  error?: FieldError | boolean;
+  as?: string
+  error?: FieldError | boolean
 }
 
 const Input = styled("input")<InputProps>(
@@ -47,7 +47,7 @@ const Input = styled("input")<InputProps>(
     "&::placeholder": {
       color: theme.colors.africanElephant,
     },
-    "&:disabled": {
+    "&:disabled, &:read-only": {
       backgroundColor: theme.colors.superlightGray,
     },
   },
@@ -66,11 +66,11 @@ const Input = styled("input")<InputProps>(
       ? {
           border: `2px solid ${theme.colors.invalidRed}`,
         }
-      : undefined,
-);
+      : undefined
+)
 
 Input.defaultProps = {
   ...theme.textStyles.input,
-};
+}
 
-export default Input;
+export default Input

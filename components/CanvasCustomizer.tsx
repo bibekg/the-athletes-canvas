@@ -3,6 +3,7 @@ import Box from "components/Box"
 import Button from "components/Button"
 import * as Form from "components/Form"
 import {
+  BoundsDrawn,
   Props as RouteMapProps,
   RouteMap,
   RouteMapDoneDrawingCallback,
@@ -24,6 +25,20 @@ import { hasOwnProperty } from "utils/typecheck"
 import Image from "./Image"
 import Link from "./Link"
 import SegmentedController, { TabActionType } from "./SegmentedController"
+
+const geoBoundsMemo: Record<string, GeoBounds> = {}
+const memoizedGeoBounds = (bounds: GeoBounds) => {
+  const key = [
+    bounds.leftLon,
+    bounds.rightLon,
+    bounds.upperLat,
+    bounds.lowerLat,
+  ].join("-")
+  if (!geoBoundsMemo.hasOwnProperty(key)) {
+    geoBoundsMemo[key] = bounds
+  }
+  return geoBoundsMemo[key]
+}
 
 const makeColorString = (color: RGBColor) =>
   `rgba(${color.r}, ${color.g}, ${color.b}, ${color.a})`
@@ -152,42 +167,42 @@ export const CanvasCustomizer = ({ activities }: Props) => {
     handleSubmit,
     setValue,
   } = useForm<CustomizationOptions>({
-    mode: "onBlur",
+    mode: "onChange",
     defaultValues,
   })
   const values = watch()
 
-  const routesToRender = React.useMemo(
-    () =>
-      routes.filter(
-        (route) =>
-          // Filter for date range
-          toTimestamp(route.startDate) > toTimestamp(values.startDate) &&
-          toTimestamp(route.startDate) < toTimestamp(values.endDate) &&
-          // Filter for activity type
-          values.activityTypes.includes(route.type) &&
-          // If user wants to use custom coords, filter using those
-          (!values.useCustomCoords ||
-            route.waypoints.some(
-              (waypoint) =>
-                waypoint.lat > values.lowerLat &&
-                waypoint.lat < values.upperLat &&
-                waypoint.lon > values.leftLon &&
-                waypoint.lon < values.rightLon
-            ))
-      ),
-    [
-      routes,
-      values.startDate,
-      values.endDate,
-      values.activityTypes,
-      values.leftLon,
-      values.rightLon,
-      values.upperLat,
-      values.lowerLat,
-      values.useCustomCoords,
-    ]
-  )
+  const routesToRender = React.useMemo(() => {
+    console.log("routesToRender")
+    return routes.filter(
+      (route) =>
+        // Filter for date range
+        toTimestamp(route.startDate) > toTimestamp(values.startDate) &&
+        toTimestamp(route.startDate) < toTimestamp(values.endDate) &&
+        // Filter for activity type
+        values.activityTypes.includes(route.type) &&
+        // If user wants to use custom coords, filter using those
+        (!values.useCustomCoords ||
+          route.waypoints.some(
+            (waypoint) =>
+              waypoint.lat > values.lowerLat &&
+              waypoint.lat < values.upperLat &&
+              waypoint.lon > values.leftLon &&
+              waypoint.lon < values.rightLon
+          ))
+    )
+  }, [
+    routes,
+    values.startDate,
+    values.endDate,
+    // Need to turn array into a string so memoization works since identically-populated but distinct arrays won't pass the === test
+    values.activityTypes.join("&"),
+    values.leftLon,
+    values.rightLon,
+    values.upperLat,
+    values.lowerLat,
+    values.useCustomCoords,
+  ])
 
   // When we've determined a new set of routes to render, if the user isn't specifying
   // custom coords, recalculate the geo bounds for the routes and update the form fields
@@ -220,39 +235,7 @@ export const CanvasCustomizer = ({ activities }: Props) => {
     }
   }, [routesToRender, values.useCustomCoords])
 
-  const createRouteMapProps = (
-    options: CustomizationOptions
-  ): RouteMapProps => {
-    return {
-      routes: routesToRender,
-      geoBounds: {
-        leftLon: values.leftLon,
-        rightLon: values.rightLon,
-        upperLat: values.upperLat,
-        lowerLat: values.lowerLat,
-      },
-      thickness: options.thickness,
-      pathResolution: options.pathResolution,
-      mapResolution: options.mapResolution,
-      bgColor: options.bgColor ? makeColorString(options.bgColor) : null,
-      pathColor: makeColorString(options.pathColor),
-    }
-  }
-
-  const [propsToPass, setPropsToPass] = React.useState<RouteMapProps>(
-    createRouteMapProps(defaultValues)
-  )
-
-  const handleRouteMapDoneDrawing: RouteMapDoneDrawingCallback = React.useCallback(
-    ({ resolution }) => {
-      setImageResolution(resolution)
-      setIsDrawing(false)
-    },
-    [setImageResolution, setIsDrawing]
-  )
-
-  const onSubmit = (data: CustomizationOptions) => {
-    // Update URL query params to reflect new state
+  const updateQueryParams = () => {
     const queryParams = new URLSearchParams(window.location.search)
     queryParams.set("startDate", values.startDate)
     queryParams.set("endDate", values.endDate)
@@ -269,10 +252,53 @@ export const CanvasCustomizer = ({ activities }: Props) => {
       queryParams.delete("lowerLat")
     }
     window.history.replaceState(null, "", `?${queryParams.toString()}`)
+  }
 
-    const newProps = createRouteMapProps(data)
-    setPropsToPass(newProps)
-    setIsDrawing(true)
+  const routeMapProps = React.useMemo(() => {
+    updateQueryParams()
+    return {
+      routes: routesToRender,
+      geoBounds: memoizedGeoBounds({
+        leftLon: values.leftLon,
+        rightLon: values.rightLon,
+        upperLat: values.upperLat,
+        lowerLat: values.lowerLat,
+      }),
+      thickness: values.thickness,
+      pathResolution: values.pathResolution,
+      mapResolution: values.mapResolution,
+      bgColor: values.bgColor ? makeColorString(values.bgColor) : null,
+      pathColor: makeColorString(values.pathColor),
+    }
+  }, [
+    routesToRender,
+    values.leftLon,
+    values.rightLon,
+    values.upperLat,
+    values.lowerLat,
+    values.thickness,
+    values.pathResolution,
+    values.mapResolution,
+    values.bgColor,
+    values.pathColor,
+  ])
+
+  const handleRouteMapDoneDrawing: RouteMapDoneDrawingCallback = React.useCallback(
+    ({ resolution }) => {
+      setImageResolution(resolution)
+      setIsDrawing(false)
+    },
+    [setImageResolution, setIsDrawing]
+  )
+
+  const handleBoundsDrawn = (bounds: GeoBounds) => {
+    const { upperLat, lowerLat, leftLon, rightLon } = bounds
+
+    setValue("useCustomCoords", true)
+    setValue("upperLat", upperLat)
+    setValue("lowerLat", lowerLat)
+    setValue("leftLon", leftLon)
+    setValue("rightLon", rightLon)
   }
 
   return (
@@ -284,7 +310,7 @@ export const CanvasCustomizer = ({ activities }: Props) => {
       gridTemplateAreas={`
       "header header map"
       "options routeList map"
-      "buttons buttons map"
+      "summary summary map"
     `}
     >
       <Box
@@ -340,7 +366,7 @@ export const CanvasCustomizer = ({ activities }: Props) => {
           />
         </Box>
 
-        <Form.Form onSubmit={handleSubmit(onSubmit)} id="customizations">
+        <Form.Form id="customizations">
           {/* Activity filtering options */}
           <Box
             display={mode === "routes" ? "grid" : "none"}
@@ -350,6 +376,7 @@ export const CanvasCustomizer = ({ activities }: Props) => {
                   "useCustomCoords useCustomCoords"
                   "leftLon rightLon"
                   "upperLat lowerLat"
+                  "reset reset"
                 `}
             gridTemplateColumns="1fr 1fr"
             gridTemplateRows="auto"
@@ -383,16 +410,16 @@ export const CanvasCustomizer = ({ activities }: Props) => {
               ))}
             </Form.Item>
             <Form.Item gridArea="useCustomCoords">
-              <Form.Label>Use custom coordinate bounds?</Form.Label>
+              <Form.Label>Coordinate bounds</Form.Label>
               <Form.FieldDescription>
-                By default, the coordinate bounds are automatically determined
-                to fit the selected activities. If you'd like, you can override
-                the bounds yourself.
+                Click + drag on the map to zoom into a specific area or enter
+                specific coordinates here.
               </Form.FieldDescription>
               <Form.Input
+                ref={register()}
                 name="useCustomCoords"
                 type="checkbox"
-                ref={register()}
+                hidden
               />
             </Form.Item>
 
@@ -405,7 +432,6 @@ export const CanvasCustomizer = ({ activities }: Props) => {
                 min={-180}
                 max={values.rightLon}
                 step="any"
-                disabled={!values.useCustomCoords}
               />
             </Form.Item>
             <Form.Item gridArea="rightLon">
@@ -417,7 +443,6 @@ export const CanvasCustomizer = ({ activities }: Props) => {
                 min={values.leftLon}
                 max={180}
                 step="any"
-                disabled={!values.useCustomCoords}
               />
             </Form.Item>
             <Form.Item gridArea="upperLat">
@@ -429,7 +454,6 @@ export const CanvasCustomizer = ({ activities }: Props) => {
                 min={values.lowerLat}
                 max={90}
                 step="any"
-                disabled={!values.useCustomCoords}
               />
             </Form.Item>
             <Form.Item gridArea="lowerLat">
@@ -441,9 +465,16 @@ export const CanvasCustomizer = ({ activities }: Props) => {
                 min={-90}
                 max={values.upperLat}
                 step="any"
-                disabled={!values.useCustomCoords}
               />
             </Form.Item>
+            <Button
+              gridArea="reset"
+              variant="secondary"
+              type="button"
+              onClick={() => setValue("useCustomCoords", false)}
+            >
+              Reset map
+            </Button>
           </Box>
           {/* Visualization Options */}
 
@@ -609,42 +640,11 @@ export const CanvasCustomizer = ({ activities }: Props) => {
         </Box>
       </Box>
 
-      <Box gridArea="buttons" bg="white" p={3}>
-        {isDrawing ? (
-          <Button
-            // There's a weird React bug(?) that was causing this button being clicked to trigger a form submission (the other button's job)
-            // Requires specifying key to fix. See https://github.com/facebook/react/issues/8554 for more details.
-            key="stop"
-            size="big"
-            width="100%"
-            type="button"
-            variant="danger"
-            form="none"
-            onClick={() => {
-              routeMapRef.current?.cancelDrawing()
-              setIsDrawing(false)
-            }}
-          >
-            Stop plotting {routesToRender.length} activities
-          </Button>
-        ) : (
-          <Button
-            mb={1}
-            key="update"
-            type="submit"
-            size="big"
-            width="100%"
-            form="customizations"
-            onClick={() => {
-              console.log("clicked submit")
-            }}
-            disabled={isDrawing}
-            inProgress={isDrawing}
-            inProgressText="Drawing..."
-          >
-            Plot {routesToRender.length} activities
-          </Button>
-        )}
+      <Box gridArea="summary" bg="white" p={3}>
+        <Text.Body2>
+          There are {routesToRender.length} activities matching your current
+          filters.
+        </Text.Body2>
       </Box>
 
       <Box
@@ -661,14 +661,15 @@ export const CanvasCustomizer = ({ activities }: Props) => {
         bg={colors.offWhite}
       >
         <RouteMap
-          {...propsToPass}
+          {...routeMapProps}
           // No animations for the customizer... it's too awkward to support
           animationDuration={0}
           ref={routeMapRef}
           onDoneDrawing={handleRouteMapDoneDrawing}
+          onBoundsDrawn={handleBoundsDrawn}
           canvasStyles={css({
-            border: `20px solid ${colors.midnightGray}`,
-            maxHeight: "100%",
+            outline: `20px solid ${colors.midnightGray}`,
+            maxHeight: "calc(100vh - 40px - 2vh)",
             maxWidth: "100%",
           })}
         />
