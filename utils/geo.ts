@@ -1,7 +1,5 @@
 import { GeoBounds, Route } from "types/geo"
-
-const roundToPlaces = (value: number, places: number) =>
-  Math.round(value * 10 ** places) / 10 ** places
+import { roundToPlaces } from "./math"
 
 // The whole globe -- this might be unsafe since it'll make a gigantic canvas...
 export const FALLBACK_GEO_BOUNDS: GeoBounds = {

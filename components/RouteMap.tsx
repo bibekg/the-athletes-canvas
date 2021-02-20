@@ -1,6 +1,6 @@
 import { css, SerializedStyles } from "@emotion/react"
 import * as React from "react"
-import { bottom } from "styled-system"
+import { roundToPlaces } from "utils/math"
 import { Coords, GeoBounds, Route } from "types/geo"
 
 const MAX_WIDTH_PX = 30000
@@ -53,8 +53,14 @@ const canvasPointToCoordinates = (
   const xRange = normalizedMaxX - normalizedMinX
   const yRange = normalizedMaxY - normalizedMinY
 
-  const lon = (x / canvas.width) * xRange + normalizedMinX - 180
-  const lat = 90 - ((y / canvas.height) * yRange + normalizedMinY)
+  const lon = roundToPlaces(
+    (x / canvas.width) * xRange + normalizedMinX - 180,
+    4
+  )
+  const lat = roundToPlaces(
+    90 - ((y / canvas.height) * yRange + normalizedMinY),
+    4
+  )
 
   return { lat, lon }
 }
@@ -153,7 +159,10 @@ export const RouteMap = React.forwardRef(
       mouseRef.current.y = ev.pageY - canvasBounds.top
     }
 
-    const handleMouseDown = () => {
+    const handleMouseDown = (
+      eventData: React.MouseEvent<HTMLCanvasElement, MouseEvent>
+    ) => {
+      if (eventData.button != 0) return
       const canvas = canvasRef.current
       const canvasBounds = canvasBoundsRef.current
       const mouse = mouseRef.current
@@ -167,7 +176,10 @@ export const RouteMap = React.forwardRef(
       setIsBounding(true)
     }
 
-    const handleMouseUp = () => {
+    const handleMouseUp = (
+      eventData: React.MouseEvent<HTMLCanvasElement, MouseEvent>
+    ) => {
+      if (eventData.button != 0) return
       const canvas = canvasRef.current
       const canvasBounds = canvasBoundsRef.current
       const mouse = mouseRef.current
@@ -205,7 +217,6 @@ export const RouteMap = React.forwardRef(
         })
       }
 
-      canvas.style.cursor = "default"
       setIsBounding(false)
       mouse.x = 0
       mouse.y = 0
@@ -340,19 +351,16 @@ export const RouteMap = React.forwardRef(
 
       // Done drawing, clear the routesStarted set so next draw has a freshly empty set
       routesStarted.current = {}
-      console.log(`Done rendering ${routesToRender.length} routes`)
     }
 
     // Re-render the routes if props have changed
     React.useEffect(() => {
-      console.log("rerendering routemap")
       // Cancel all animation frames since the props may have changed mid-animation
       cancelPendingAnimationFrames()
       drawingInProgress.current = false
       // Pull out the routes that are within the geoBounds
       // const filteredRoutes = routes.filter(filterRoutesForGeoBounds(geoBounds));
       renderRoutes(routes).then(() => {
-        console.log("executing then block")
         const canvas = canvasRef.current
 
         onDoneDrawing({
@@ -386,11 +394,10 @@ export const RouteMap = React.forwardRef(
     return (
       <div css={css({ position: "relative" })}>
         <canvas
-          // onClick={handleCanvasClick}
           onMouseDown={handleMouseDown}
           onMouseUp={handleMouseUp}
           onMouseMove={handleMouseMove}
-          css={css(canvasStyles, { position: "relative" })}
+          css={css(canvasStyles, { position: "relative", cursor: "crosshair" })}
           ref={canvasRef}
           width={effectiveWidth}
           height={effectiveHeight}
