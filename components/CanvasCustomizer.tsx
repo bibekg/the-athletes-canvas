@@ -3,6 +3,7 @@ import Box from "components/Box"
 import Button from "components/Button"
 import * as Form from "components/Form"
 import {
+  BoundsDrawn,
   Props as RouteMapProps,
   RouteMap,
   RouteMapDoneDrawingCallback,
@@ -152,7 +153,7 @@ export const CanvasCustomizer = ({ activities }: Props) => {
     handleSubmit,
     setValue,
   } = useForm<CustomizationOptions>({
-    mode: "onBlur",
+    mode: "onChange",
     defaultValues,
   })
   const values = watch()
@@ -226,10 +227,10 @@ export const CanvasCustomizer = ({ activities }: Props) => {
     return {
       routes: routesToRender,
       geoBounds: {
-        leftLon: values.leftLon,
-        rightLon: values.rightLon,
-        upperLat: values.upperLat,
-        lowerLat: values.lowerLat,
+        leftLon: options.leftLon,
+        rightLon: options.rightLon,
+        upperLat: options.upperLat,
+        lowerLat: options.lowerLat,
       },
       thickness: options.thickness,
       pathResolution: options.pathResolution,
@@ -251,17 +252,31 @@ export const CanvasCustomizer = ({ activities }: Props) => {
     [setImageResolution, setIsDrawing]
   )
 
+  const handleBoundsDrawn = (bounds: GeoBounds) => {
+    const { upperLat, lowerLat, leftLon, rightLon } = bounds
+
+    setValue("useCustomCoords", true)
+    setValue("upperLat", upperLat)
+    setValue("lowerLat", lowerLat)
+    setValue("leftLon", leftLon)
+    setValue("rightLon", rightLon)
+
+    const nextProps = createRouteMapProps({ ...values, ...bounds })
+    setPropsToPass(nextProps)
+    setIsDrawing(true)
+  }
+
   const onSubmit = (data: CustomizationOptions) => {
     // Update URL query params to reflect new state
     const queryParams = new URLSearchParams(window.location.search)
-    queryParams.set("startDate", values.startDate)
-    queryParams.set("endDate", values.endDate)
-    queryParams.set("activityTypes", values.activityTypes.join(","))
-    if (values.useCustomCoords) {
-      queryParams.set("leftLon", String(values.leftLon))
-      queryParams.set("rightLon", String(values.rightLon))
-      queryParams.set("upperLat", String(values.upperLat))
-      queryParams.set("lowerLat", String(values.lowerLat))
+    queryParams.set("startDate", data.startDate)
+    queryParams.set("endDate", data.endDate)
+    queryParams.set("activityTypes", data.activityTypes.join(","))
+    if (data.useCustomCoords) {
+      queryParams.set("leftLon", String(data.leftLon))
+      queryParams.set("rightLon", String(data.rightLon))
+      queryParams.set("upperLat", String(data.upperLat))
+      queryParams.set("lowerLat", String(data.lowerLat))
     } else {
       queryParams.delete("leftLon")
       queryParams.delete("rightLon")
@@ -405,7 +420,7 @@ export const CanvasCustomizer = ({ activities }: Props) => {
                 min={-180}
                 max={values.rightLon}
                 step="any"
-                disabled={!values.useCustomCoords}
+                readOnly={!values.useCustomCoords}
               />
             </Form.Item>
             <Form.Item gridArea="rightLon">
@@ -417,7 +432,7 @@ export const CanvasCustomizer = ({ activities }: Props) => {
                 min={values.leftLon}
                 max={180}
                 step="any"
-                disabled={!values.useCustomCoords}
+                readOnly={!values.useCustomCoords}
               />
             </Form.Item>
             <Form.Item gridArea="upperLat">
@@ -429,7 +444,7 @@ export const CanvasCustomizer = ({ activities }: Props) => {
                 min={values.lowerLat}
                 max={90}
                 step="any"
-                disabled={!values.useCustomCoords}
+                readOnly={!values.useCustomCoords}
               />
             </Form.Item>
             <Form.Item gridArea="lowerLat">
@@ -441,7 +456,7 @@ export const CanvasCustomizer = ({ activities }: Props) => {
                 min={-90}
                 max={values.upperLat}
                 step="any"
-                disabled={!values.useCustomCoords}
+                readOnly={!values.useCustomCoords}
               />
             </Form.Item>
           </Box>
@@ -666,9 +681,10 @@ export const CanvasCustomizer = ({ activities }: Props) => {
           animationDuration={0}
           ref={routeMapRef}
           onDoneDrawing={handleRouteMapDoneDrawing}
+          onBoundsDrawn={handleBoundsDrawn}
           canvasStyles={css({
-            border: `20px solid ${colors.midnightGray}`,
-            maxHeight: "100%",
+            outline: `20px solid ${colors.midnightGray}`,
+            maxHeight: "calc(100vh - 40px - 2vh)",
             maxWidth: "100%",
           })}
         />

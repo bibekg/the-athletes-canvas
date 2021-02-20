@@ -15,7 +15,7 @@ import { useStravaData } from "utils/useStravaData"
 const baseUrl =
   process.env.NODE_ENV === "production"
     ? "https://athlete-canvas.vercel.app"
-    : `http://localhost:${process.env.PORT}`
+    : `http://localhost:3003`
 
 const stravaOauthUrlParams = new URLSearchParams()
 stravaOauthUrlParams.set("client_id", "58724")
