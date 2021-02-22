@@ -613,30 +613,35 @@ export const CanvasCustomizer = ({ activities }: Props) => {
           p={3}
           boxShadow={shadows.inner}
         >
-          {routesToRender.map((route) => (
-            <Link
-              key={route.id}
-              href={`https://www.strava.com/activities/${route.id}`}
-            >
-              <Box
-                p={2}
-                mb={2}
-                flexShrink={0}
-                boxShadow={shadows.knob}
-                borderRadius={2}
-                width="100%"
-                bg="white"
+          {routesToRender
+            // Sort activities in recent-first order
+            .sort((routeA, routeB) =>
+              routeB.startDate.localeCompare(routeA.startDate)
+            )
+            .map((route) => (
+              <Link
+                key={route.id}
+                href={`https://www.strava.com/activities/${route.id}`}
               >
-                <Text.Body2>
-                  {activityTypeEmojis[route.type]} {route.name}
-                </Text.Body2>
-                <Text.Body3 color={colors.lightGray}>
-                  {dateFormat(route.startDate, "mmmm d, yyyy 'at' h:MM TT")}
-                </Text.Body3>
-                {/* <Text.Body3>{getActivityTypeLabel(route.type)}</Text.Body3> */}
-              </Box>
-            </Link>
-          ))}
+                <Box
+                  p={2}
+                  mb={2}
+                  flexShrink={0}
+                  boxShadow={shadows.knob}
+                  borderRadius={2}
+                  width="100%"
+                  bg="white"
+                >
+                  <Text.Body2>
+                    {activityTypeEmojis[route.type]} {route.name}
+                  </Text.Body2>
+                  <Text.Body3 color={colors.lightGray}>
+                    {dateFormat(route.startDate, "mmmm d, yyyy 'at' h:MM TT")}
+                  </Text.Body3>
+                  {/* <Text.Body3>{getActivityTypeLabel(route.type)}</Text.Body3> */}
+                </Box>
+              </Link>
+            ))}
         </Box>
       </Box>
 

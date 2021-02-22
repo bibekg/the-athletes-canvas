@@ -15,7 +15,7 @@ export interface Coords {
 export type Route = {
   id: any
   name: string
-  startDate: Date
+  startDate: string
   type: ActivityType
   waypoints: Array<Coords>
 }
