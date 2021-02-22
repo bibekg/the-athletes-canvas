@@ -10,21 +10,35 @@ export default createHandler(async (req, res) => {
   }
 
   const fetchActivitiesAndRespondToClient = async () => {
-    const response = await axios({
-      url: "https://www.strava.com/api/v3/athlete/activities",
-      params: {
-        per_page: 200, // max allowed
-        // after start of 2020
-        after: new Date("2020-01-01T00:00:00.000Z").getTime() / 1000,
-      },
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    })
+    const allActivities: any[] = []
+
+    for (let page = 1; true; page += 1) {
+      const response = await axios({
+        // https://developers.strava.com/docs/reference/#api-Activities-getLoggedInAthleteActivities
+        url: "https://www.strava.com/api/v3/athlete/activities",
+        params: {
+          per_page: 200, // max allowed per page
+          page,
+        },
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      })
+
+      if (
+        !response.data ||
+        !Array.isArray(response.data) ||
+        response.data.length === 0
+      ) {
+        break
+      } else {
+        allActivities.push(...response.data)
+      }
+    }
 
     res.json({
-      activities: response.data,
+      activities: allActivities,
     })
   }
 
