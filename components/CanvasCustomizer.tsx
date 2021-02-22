@@ -619,28 +619,29 @@ export const CanvasCustomizer = ({ activities }: Props) => {
               routeB.startDate.localeCompare(routeA.startDate)
             )
             .map((route) => (
-              <Link
-                key={route.id}
-                href={`https://www.strava.com/activities/${route.id}`}
+              <Box
+                p={2}
+                mb={2}
+                flexShrink={0}
+                boxShadow={shadows.knob}
+                borderRadius={2}
+                width="100%"
+                bg="white"
               >
-                <Box
-                  p={2}
-                  mb={2}
-                  flexShrink={0}
-                  boxShadow={shadows.knob}
-                  borderRadius={2}
-                  width="100%"
-                  bg="white"
+                <Text.Body2>
+                  {activityTypeEmojis[route.type]} {route.name}
+                </Text.Body2>
+                <Text.Body3 color={colors.lightGray}>
+                  {dateFormat(route.startDate, "mmmm d, yyyy 'at' h:MM TT")}
+                </Text.Body3>
+                <Link
+                  key={route.id}
+                  href={`https://www.strava.com/activities/${route.id}`}
+                  fontSize={12}
                 >
-                  <Text.Body2>
-                    {activityTypeEmojis[route.type]} {route.name}
-                  </Text.Body2>
-                  <Text.Body3 color={colors.lightGray}>
-                    {dateFormat(route.startDate, "mmmm d, yyyy 'at' h:MM TT")}
-                  </Text.Body3>
-                  {/* <Text.Body3>{getActivityTypeLabel(route.type)}</Text.Body3> */}
-                </Box>
-              </Link>
+                  View activity in Strava
+                </Link>
+              </Box>
             ))}
         </Box>
       </Box>

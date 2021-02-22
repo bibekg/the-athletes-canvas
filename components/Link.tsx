@@ -1,12 +1,20 @@
 import * as React from "react"
 import isPropValid from "@emotion/is-prop-valid"
 import styled from "@emotion/styled"
-import { space, SpaceProps, layout, LayoutProps } from "styled-system"
+import {
+  space,
+  SpaceProps,
+  layout,
+  LayoutProps,
+  typography,
+} from "styled-system"
 import NextLink from "next/link"
 import * as buttonlikeStyles from "styles/components/buttonlike"
 import theme from "styles/theme"
+import { fontFamilies } from "styles/typography"
 
 const linkBaseStyles = (props: LinkStyleProps) => ({
+  fontFamily: fontFamilies.primary,
   textDecoration: props.underline ? "underline" : "none",
   color: props.color ?? theme.colors.linkBlue,
 })
@@ -30,6 +38,7 @@ interface LinkStyleProps extends SpaceProps, LayoutProps {
 const args = [
   space,
   layout,
+  typography,
   (props: LinkStyleProps) =>
     props.buttonStyle || props.buttonSize
       ? {

@@ -1,6 +1,6 @@
 import colors from "./colors"
 
-const fontFamilies = {
+export const fontFamilies = {
   flair: "Yellowtail, Helvetica, sans-serif",
   primary: "Rubik, Helvetica, sans-serif",
 }
@@ -11,7 +11,7 @@ export const baseTextStyles = {
   letterSpacing: "0.02em",
 }
 
-const textStyles: Record<string, any> = {
+export const textStyles: Record<string, any> = {
   // <h* />
   h1: {
     fontWeight: 400,
