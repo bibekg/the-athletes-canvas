@@ -1,7 +1,7 @@
-import colors from './colors'
-import typography from './typography'
-import breakpoints from './breakpoints'
-import shadows from './shadows'
+import colors from "./colors"
+import typography from "./typography"
+import breakpoints from "./breakpoints"
+import shadows from "./shadows"
 
 const theme = {
   space: [0, 4, 8, 16, 32, 64, 128, 256, 512],

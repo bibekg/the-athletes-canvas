@@ -39,7 +39,6 @@ export const activitiesToRoutes = (
   activities: Array<SummaryActivity>,
   activityFilterPredicate?: (activity: SummaryActivity) => boolean
 ): Array<Route> => {
-  console.log("aToR")
   const filteredActivities = activityFilterPredicate
     ? activities.filter(activityFilterPredicate)
     : activities

@@ -3,20 +3,20 @@ import Box from "components/Box"
 import Button from "components/Button"
 import * as Form from "components/Form"
 import {
-  BoundsDrawn,
-  Props as RouteMapProps,
   RouteMap,
   RouteMapDoneDrawingCallback,
   RouteMapRef,
 } from "components/RouteMap"
 import * as Text from "components/Text"
 import dateFormat from "dateformat"
+import _ from "lodash"
+import mapboxgl from "mapbox-gl"
 import * as React from "react"
 import { AlphaPicker, CompactPicker, RGBColor } from "react-color"
 import { Controller, useForm } from "react-hook-form"
 import { colors } from "styles"
 import shadows from "styles/shadows"
-import { GeoBounds } from "types/geo"
+import { GeoBounds, Route } from "types/geo"
 import { SummaryActivity } from "types/strava"
 import { ActivityType } from "types/strava/enums"
 import { FALLBACK_GEO_BOUNDS, getGeoBoundsForRoutes } from "utils/geo"
@@ -24,6 +24,7 @@ import { activitiesToRoutes, activityTypeEmojis } from "utils/strava"
 import { hasOwnProperty } from "utils/typecheck"
 import Image from "./Image"
 import Link from "./Link"
+import MapboxMap from "./MapboxMap"
 import SegmentedController, { TabActionType } from "./SegmentedController"
 
 const geoBoundsMemo: Record<string, GeoBounds> = {}
@@ -44,18 +45,30 @@ const makeColorString = (color: RGBColor) =>
   `rgba(${color.r}, ${color.g}, ${color.b}, ${color.a})`
 
 const resolutionOptions = [
-  { value: 0.1, label: "Low" },
+  { value: 0.1, label: "Low (best for spread-out activities)" },
   { value: 0.25, label: "Medium" },
-  { value: 1.0, label: "High" },
+  { value: 1.0, label: "High (best for tightly-grouped activities)" },
 ]
+
+const getOptimalResolutionForBounds = (bounds: GeoBounds) => {
+  const width = Math.abs(bounds.leftLon - bounds.rightLon)
+  const height = Math.abs(bounds.upperLat - bounds.lowerLat)
+  const area = width * height
+  if (area > 5) return resolutionOptions[0]
+  if (area > 2.5) return resolutionOptions[1]
+  return resolutionOptions[2]
+}
 
 interface ActivityFilteringOptions {
   startDate: string
   endDate: string
   activityTypes: Array<ActivityType>
+  leftLon: number
+  rightLon: number
+  upperLat: number
+  lowerLat: number
 }
 interface VisualizationOptions extends GeoBounds {
-  useCustomCoords: boolean
   thickness: number
   mapResolution: number
   pathResolution: number
@@ -86,7 +99,7 @@ const optionsFromQueryParams = (() => {
   const rightLon = params.get("rightLon")
   const upperLat = params.get("upperLat")
   const lowerLat = params.get("lowerLat")
-  const useCustomCoords =
+  const hasCustomCoords =
     leftLon != null && rightLon != null && upperLat != null && lowerLat != null
 
   return {
@@ -98,7 +111,7 @@ const optionsFromQueryParams = (() => {
       .filter((at) => hasOwnProperty(activityTypeEmojis, at)) ?? undefined) as
       | Array<ActivityType>
       | undefined,
-    geoBounds: useCustomCoords
+    geoBounds: hasCustomCoords
       ? {
           leftLon: Number(leftLon),
           rightLon: Number(rightLon),
@@ -106,58 +119,104 @@ const optionsFromQueryParams = (() => {
           lowerLat: Number(lowerLat),
         }
       : null,
-    useCustomCoords: useCustomCoords,
   }
 })()
 
+const routesFilterer = (options: Partial<ActivityFilteringOptions>) => (
+  route: Route
+) =>
+  // Filter for date range
+  (options.startDate == null ||
+    toTimestamp(route.startDate) > toTimestamp(options.startDate)) &&
+  (options.endDate == null ||
+    toTimestamp(route.startDate) < toTimestamp(options.endDate)) &&
+  // Filter for activity type
+  (options.activityTypes == null ||
+    options.activityTypes.includes(route.type)) &&
+  // If user wants to use custom coords, filter using those
+  route.waypoints.some(
+    (waypoint) =>
+      (options.lowerLat == null || waypoint.lat > options.lowerLat) &&
+      (options.upperLat == null || waypoint.lat < options.upperLat) &&
+      (options.leftLon == null || waypoint.lon > options.leftLon) &&
+      (options.rightLon == null || waypoint.lon < options.rightLon)
+  )
+
 export const CanvasCustomizer = ({ activities }: Props) => {
+  // Generate list of activity type options {value, label} that there are activities for
+  const activityTypeOptions: Array<{
+    value: ActivityType
+    label: string
+  }> = React.useMemo(
+    () =>
+      activities
+        .map((activity) => activity.type)
+        .filter((item, index, arr) => arr.indexOf(item) === index)
+        .map((item) => ({
+          value: item,
+          label: getActivityTypeLabel(item),
+        })),
+    [activities]
+  )
   const [imageResolution, setImageResolution] = React.useState<{
     width: number
     height: number
   } | null>(null)
 
-  const [isDrawing, setIsDrawing] = React.useState(true)
-
   const routeMapRef = React.useRef<RouteMapRef | null>(null)
+  const coordinateBoundsMapRef = React.useRef<mapboxgl.Map | null>(null)
 
   const routes = React.useMemo(() => activitiesToRoutes(activities), [
     activities,
   ])
 
-  const geoBoundsForProvidedRoutes = React.useMemo(
+  const geoBoundsForAllRoutes = React.useMemo(
     () => getGeoBoundsForRoutes(routes),
     [routes]
   )
 
-  // Generate list of activity type options {value, label} that there are activities for
-  const activityTypeOptions: Array<{
-    value: ActivityType
-    label: string
-  }> = activities
-    .map((activity) => activity.type)
-    .filter((item, index, arr) => arr.indexOf(item) === index)
-    .map((item) => ({
-      value: item,
-      label: getActivityTypeLabel(item),
-    }))
+  const defaultActivityTypes =
+    optionsFromQueryParams.activityTypes ??
+    activityTypeOptions.map((o) => o.value)
+  const defaultStartDate = optionsFromQueryParams.startDate ?? "2020-01-01"
+  const defaultEndDate =
+    optionsFromQueryParams.endDate ?? new Date().toISOString().substr(0, 10)
+
+  const defaultRoutesToRender = React.useMemo(
+    () =>
+      geoBoundsForAllRoutes
+        ? routes.filter(
+            routesFilterer({
+              activityTypes: defaultActivityTypes,
+              startDate: defaultStartDate,
+              endDate: defaultEndDate,
+            })
+          )
+        : routes,
+    [routes, geoBoundsForAllRoutes]
+  )
+  const geoBoundsForDefaultRoutesToRender = React.useMemo(
+    () => getGeoBoundsForRoutes(defaultRoutesToRender),
+    [routes]
+  )
+
+  const defaultGeoBounds = {
+    // We waterfall through a few different options
+    ...FALLBACK_GEO_BOUNDS,
+    ...geoBoundsForDefaultRoutesToRender,
+    ...optionsFromQueryParams.geoBounds,
+  }
 
   const defaultValues: CustomizationOptions = {
-    activityTypes:
-      optionsFromQueryParams.activityTypes ??
-      activityTypeOptions.map((o) => o.value),
-    startDate: optionsFromQueryParams.startDate ?? "2020-01-01",
-    endDate:
-      optionsFromQueryParams.endDate ?? new Date().toISOString().substr(0, 10),
+    activityTypes: defaultActivityTypes,
+    startDate: defaultStartDate,
+    endDate: defaultEndDate,
     thickness: 0.5,
-    mapResolution: resolutionOptions[1].value,
+    mapResolution: getOptimalResolutionForBounds(defaultGeoBounds).value,
     pathResolution: 1,
     bgColor: { r: 255, g: 255, b: 255, a: 1.0 },
     pathColor: { r: 0, g: 0, b: 0, a: 0.2 },
-    useCustomCoords: optionsFromQueryParams.useCustomCoords ?? false,
-    ...FALLBACK_GEO_BOUNDS,
-    // This may or may not be present and override FALLBACK_GEO_BOUNDS
-    ...geoBoundsForProvidedRoutes,
-    ...optionsFromQueryParams.geoBounds,
+    ...defaultGeoBounds,
   }
   const [mode, setMode] = React.useState<"routes" | "visualization">("routes")
   const {
@@ -170,88 +229,43 @@ export const CanvasCustomizer = ({ activities }: Props) => {
     mode: "onChange",
     defaultValues,
   })
+
+  React.useEffect(() => {
+    // Register virtual inputs for coordinate bounds
+    register("leftLon")
+    register("rightLon")
+    register("upperLat")
+    register("lowerLat")
+  }, [])
+
   const values = watch()
 
-  const routesToRender = React.useMemo(() => {
-    console.log("routesToRender")
-    return routes.filter(
-      (route) =>
-        // Filter for date range
-        toTimestamp(route.startDate) > toTimestamp(values.startDate) &&
-        toTimestamp(route.startDate) < toTimestamp(values.endDate) &&
-        // Filter for activity type
-        values.activityTypes.includes(route.type) &&
-        // If user wants to use custom coords, filter using those
-        (!values.useCustomCoords ||
-          route.waypoints.some(
-            (waypoint) =>
-              waypoint.lat > values.lowerLat &&
-              waypoint.lat < values.upperLat &&
-              waypoint.lon > values.leftLon &&
-              waypoint.lon < values.rightLon
-          ))
-    )
-  }, [
-    routes,
-    values.startDate,
-    values.endDate,
-    // Need to turn array into a string so memoization works since identically-populated but distinct arrays won't pass the === test
-    values.activityTypes.join("&"),
-    values.leftLon,
-    values.rightLon,
-    values.upperLat,
-    values.lowerLat,
-    values.useCustomCoords,
-  ])
-
-  // When we've determined a new set of routes to render, if the user isn't specifying
-  // custom coords, recalculate the geo bounds for the routes and update the form fields
-  React.useEffect(() => {
-    if (!values.useCustomCoords) {
-      const autoGeneratedBounds = getGeoBoundsForRoutes(routesToRender)
-      if (
-        autoGeneratedBounds?.leftLon !== values.leftLon ||
-        autoGeneratedBounds?.rightLon !== values.rightLon ||
-        autoGeneratedBounds?.upperLat !== values.upperLat ||
-        autoGeneratedBounds?.lowerLat !== values.lowerLat
-      ) {
-        setValue(
-          "leftLon",
-          autoGeneratedBounds?.leftLon ?? FALLBACK_GEO_BOUNDS.leftLon
-        )
-        setValue(
-          "rightLon",
-          autoGeneratedBounds?.rightLon ?? FALLBACK_GEO_BOUNDS.rightLon
-        )
-        setValue(
-          "upperLat",
-          autoGeneratedBounds?.upperLat ?? FALLBACK_GEO_BOUNDS.upperLat
-        )
-        setValue(
-          "lowerLat",
-          autoGeneratedBounds?.lowerLat ?? FALLBACK_GEO_BOUNDS.lowerLat
-        )
-      }
-    }
-  }, [routesToRender, values.useCustomCoords])
+  const routesToRender = React.useMemo(
+    () => routes.filter(routesFilterer(values)),
+    [
+      routes,
+      values.startDate,
+      values.endDate,
+      // Need to turn array into a string so memoization works since identically-populated but distinct arrays won't pass the === test
+      values.activityTypes.join("&"),
+      values.leftLon,
+      values.rightLon,
+      values.upperLat,
+      values.lowerLat,
+    ]
+  )
 
   const updateQueryParams = () => {
     const queryParams = new URLSearchParams(window.location.search)
     queryParams.set("startDate", values.startDate)
     queryParams.set("endDate", values.endDate)
     queryParams.set("activityTypes", values.activityTypes.join(","))
-    if (values.useCustomCoords) {
-      queryParams.set("leftLon", String(values.leftLon))
-      queryParams.set("rightLon", String(values.rightLon))
-      queryParams.set("upperLat", String(values.upperLat))
-      queryParams.set("lowerLat", String(values.lowerLat))
-    } else {
-      queryParams.delete("leftLon")
-      queryParams.delete("rightLon")
-      queryParams.delete("upperLat")
-      queryParams.delete("lowerLat")
-    }
-    window.history.replaceState(null, "", `?${queryParams.toString()}`)
+    queryParams.set("leftLon", String(values.leftLon))
+    queryParams.set("rightLon", String(values.rightLon))
+    queryParams.set("upperLat", String(values.upperLat))
+    queryParams.set("lowerLat", String(values.lowerLat))
+    const queryParamString = queryParams.toString()
+    window.history.replaceState(null, "", `?${queryParamString}`)
   }
 
   const routeMapProps = React.useMemo(() => {
@@ -283,23 +297,43 @@ export const CanvasCustomizer = ({ activities }: Props) => {
     values.pathColor,
   ])
 
+  const updateBoundsValues = React.useMemo(
+    () =>
+      _.debounce((bounds: GeoBounds) => {
+        // Update the form value
+        if (
+          bounds.leftLon !== values.leftLon ||
+          bounds.rightLon !== values.rightLon ||
+          bounds.upperLat !== values.upperLat ||
+          bounds.lowerLat !== values.lowerLat
+        ) {
+          setValue("upperLat", bounds.upperLat)
+          setValue("lowerLat", bounds.lowerLat)
+          setValue("leftLon", bounds.leftLon)
+          setValue("rightLon", bounds.rightLon)
+        }
+        // Need to debounce this so the MapBox map doesn't overwhelm react-hook-form
+      }, 500),
+    [values]
+  )
+
+  const updateBoundsInputMap = React.useCallback(
+    (bounds: GeoBounds) => {
+      // Update the coordinate specification map
+      coordinateBoundsMapRef.current?.fitBounds([
+        [bounds.leftLon, bounds.lowerLat],
+        [bounds.rightLon, bounds.upperLat],
+      ])
+    },
+    [coordinateBoundsMapRef]
+  )
+
   const handleRouteMapDoneDrawing: RouteMapDoneDrawingCallback = React.useCallback(
     ({ resolution }) => {
       setImageResolution(resolution)
-      setIsDrawing(false)
     },
-    [setImageResolution, setIsDrawing]
+    [setImageResolution]
   )
-
-  const handleBoundsDrawn = (bounds: GeoBounds) => {
-    const { upperLat, lowerLat, leftLon, rightLon } = bounds
-
-    setValue("useCustomCoords", true)
-    setValue("upperLat", upperLat)
-    setValue("lowerLat", lowerLat)
-    setValue("leftLon", leftLon)
-    setValue("rightLon", rightLon)
-  }
 
   return (
     <Box
@@ -372,11 +406,8 @@ export const CanvasCustomizer = ({ activities }: Props) => {
             display={mode === "routes" ? "grid" : "none"}
             gridTemplateAreas={`
                   "startDate endDate"
+                  "map map"
                   "activityTypes activityTypes"
-                  "useCustomCoords useCustomCoords"
-                  "leftLon rightLon"
-                  "upperLat lowerLat"
-                  "reset reset"
                 `}
             gridTemplateColumns="1fr 1fr"
             gridTemplateRows="auto"
@@ -409,72 +440,38 @@ export const CanvasCustomizer = ({ activities }: Props) => {
                 </Box>
               ))}
             </Form.Item>
-            <Form.Item gridArea="useCustomCoords">
+
+            <Form.Item gridArea="map">
               <Form.Label>Coordinate bounds</Form.Label>
               <Form.FieldDescription>
-                Click + drag on the map to zoom into a specific area or enter
-                specific coordinates here.
+                Move the map below to cover the area you'd like to draw. You can
+                also click and drag on the canvas itself to draw a rectangle to
+                narrow down the drawing.
               </Form.FieldDescription>
-              <Form.Input
-                ref={register()}
-                name="useCustomCoords"
-                type="checkbox"
-                hidden
-              />
-            </Form.Item>
+              <Box mb={2}>
+                {geoBoundsForAllRoutes && (
+                  <MapboxMap
+                    width="100%"
+                    height="250px"
+                    mapRef={coordinateBoundsMapRef}
+                    initialCoordinateBounds={defaultGeoBounds}
+                    onMove={updateBoundsValues}
+                  />
+                )}
+              </Box>
 
-            <Form.Item gridArea="leftLon">
-              <Form.Label>Left Longitude</Form.Label>
-              <Form.Input
-                name="leftLon"
-                type="number"
-                ref={register({ valueAsNumber: true })}
-                min={-180}
-                max={values.rightLon}
-                step="any"
-              />
+              <Button
+                variant="secondary"
+                type="button"
+                onClick={() => {
+                  if (geoBoundsForDefaultRoutesToRender) {
+                    updateBoundsInputMap(geoBoundsForDefaultRoutesToRender)
+                  }
+                }}
+              >
+                Reset coordinate bounds
+              </Button>
             </Form.Item>
-            <Form.Item gridArea="rightLon">
-              <Form.Label>Right Longitude</Form.Label>
-              <Form.Input
-                name="rightLon"
-                type="number"
-                ref={register({ valueAsNumber: true })}
-                min={values.leftLon}
-                max={180}
-                step="any"
-              />
-            </Form.Item>
-            <Form.Item gridArea="upperLat">
-              <Form.Label>Upper Latitude</Form.Label>
-              <Form.Input
-                name="upperLat"
-                type="number"
-                ref={register({ valueAsNumber: true })}
-                min={values.lowerLat}
-                max={90}
-                step="any"
-              />
-            </Form.Item>
-            <Form.Item gridArea="lowerLat">
-              <Form.Label>Lower Latitude</Form.Label>
-              <Form.Input
-                name="lowerLat"
-                type="number"
-                ref={register({ valueAsNumber: true })}
-                min={-90}
-                max={values.upperLat}
-                step="any"
-              />
-            </Form.Item>
-            <Button
-              gridArea="reset"
-              variant="secondary"
-              type="button"
-              onClick={() => setValue("useCustomCoords", false)}
-            >
-              Reset map
-            </Button>
           </Box>
           {/* Visualization Options */}
 
@@ -620,6 +617,7 @@ export const CanvasCustomizer = ({ activities }: Props) => {
             )
             .map((route) => (
               <Box
+                key={route.id}
                 p={2}
                 mb={2}
                 flexShrink={0}
@@ -635,7 +633,6 @@ export const CanvasCustomizer = ({ activities }: Props) => {
                   {dateFormat(route.startDate, "mmmm d, yyyy 'at' h:MM TT")}
                 </Text.Body3>
                 <Link
-                  key={route.id}
                   href={`https://www.strava.com/activities/${route.id}`}
                   fontSize={12}
                 >
@@ -672,7 +669,9 @@ export const CanvasCustomizer = ({ activities }: Props) => {
           animationDuration={0}
           ref={routeMapRef}
           onDoneDrawing={handleRouteMapDoneDrawing}
-          onBoundsDrawn={handleBoundsDrawn}
+          onBoundsDrawn={(bounds) => {
+            updateBoundsInputMap(bounds)
+          }}
           canvasStyles={css({
             outline: `20px solid ${colors.midnightGray}`,
             maxHeight: "calc(100vh - 40px - 2vh)",

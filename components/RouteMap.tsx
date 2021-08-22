@@ -3,7 +3,7 @@ import * as React from "react"
 import { roundToPlaces } from "utils/math"
 import { Coords, GeoBounds, Route } from "types/geo"
 
-const MAX_WIDTH_PX = 30000
+const MAX_WIDTH_PX = 20000
 const RESOLUTION_SCALING_FACTOR = 50000
 
 const normalizeLat = (lat: number) => 90 - lat
@@ -401,7 +401,7 @@ export const RouteMap = React.forwardRef(
           ref={canvasRef}
           width={effectiveWidth}
           height={effectiveHeight}
-        ></canvas>
+        />
         <div
           ref={canvasBoundsRef}
           css={css({

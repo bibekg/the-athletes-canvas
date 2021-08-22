@@ -13,6 +13,11 @@ function MyApp({ Component, pageProps }: any) {
           href="https://fonts.googleapis.com/css2?family=Yellowtail:wght@400&display=swap"
           rel="stylesheet"
         />
+
+        <link
+          href="https://api.mapbox.com/mapbox-gl-js/v2.4.1/mapbox-gl.css"
+          rel="stylesheet"
+        />
       </Head>
       <Global
         styles={css`
