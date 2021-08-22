@@ -37,8 +37,8 @@ const MapboxMap = ({
       container: coordinateSelectionMapContainerRef.current,
       style: "mapbox://styles/mapbox/streets-v11",
       bounds: [
-        [initialCoordinateBounds.leftLon, initialCoordinateBounds.lowerLat],
-        [initialCoordinateBounds.rightLon, initialCoordinateBounds.upperLat],
+        [initialCoordinateBounds.west, initialCoordinateBounds.south],
+        [initialCoordinateBounds.east, initialCoordinateBounds.north],
       ],
     })
     if (mapRef) {
@@ -48,11 +48,11 @@ const MapboxMap = ({
     coordinateSelectionMapRef.current.on("move", () => {
       const map = coordinateSelectionMapRef.current!
       const bounds = map.getBounds()
-      const leftLon = bounds.getWest()
-      const rightLon = bounds.getEast()
-      const upperLat = bounds.getNorth()
-      const lowerLat = bounds.getSouth()
-      const boundsObject = { leftLon, rightLon, upperLat, lowerLat }
+      const west = bounds.getWest()
+      const east = bounds.getEast()
+      const north = bounds.getNorth()
+      const south = bounds.getSouth()
+      const boundsObject = { west, east, north, south }
       onMove(boundsObject)
     })
   })

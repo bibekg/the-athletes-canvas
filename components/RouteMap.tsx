@@ -22,10 +22,10 @@ const coordinatesToBoundedCanvasPoint = (
   context: CanvasRenderingContext2D,
   geoBounds: GeoBounds
 ) => {
-  const normalizedMinX = normalizeLon(geoBounds.leftLon)
-  const normalizedMaxX = normalizeLon(geoBounds.rightLon)
-  const normalizedMinY = normalizeLat(geoBounds.upperLat)
-  const normalizedMaxY = normalizeLat(geoBounds.lowerLat)
+  const normalizedMinX = normalizeLon(geoBounds.west)
+  const normalizedMaxX = normalizeLon(geoBounds.east)
+  const normalizedMinY = normalizeLat(geoBounds.north)
+  const normalizedMaxY = normalizeLat(geoBounds.south)
   const xRange = normalizedMaxX - normalizedMinX
   const yRange = normalizedMaxY - normalizedMinY
 
@@ -45,10 +45,10 @@ const canvasPointToCoordinates = (
   geoBounds: GeoBounds
 ) => {
   const canvas = context.canvas
-  const normalizedMinX = normalizeLon(geoBounds.leftLon)
-  const normalizedMaxX = normalizeLon(geoBounds.rightLon)
-  const normalizedMinY = normalizeLat(geoBounds.upperLat)
-  const normalizedMaxY = normalizeLat(geoBounds.lowerLat)
+  const normalizedMinX = normalizeLon(geoBounds.west)
+  const normalizedMaxX = normalizeLon(geoBounds.east)
+  const normalizedMinY = normalizeLat(geoBounds.north)
+  const normalizedMaxY = normalizeLat(geoBounds.south)
 
   const xRange = normalizedMaxX - normalizedMinX
   const yRange = normalizedMaxY - normalizedMinY
@@ -210,10 +210,10 @@ export const RouteMap = React.forwardRef(
         )
 
         onBoundsDrawn({
-          upperLat: topLeft.lat,
-          lowerLat: bottomRight.lat,
-          leftLon: topLeft.lon,
-          rightLon: bottomRight.lon,
+          north: topLeft.lat,
+          south: bottomRight.lat,
+          west: topLeft.lon,
+          east: bottomRight.lon,
         })
       }
 
@@ -381,8 +381,8 @@ export const RouteMap = React.forwardRef(
       canvasRef,
     ])
 
-    const widthInDegrees = Math.abs(geoBounds.leftLon - geoBounds.rightLon)
-    const heightInDegrees = Math.abs(geoBounds.upperLat - geoBounds.lowerLat)
+    const widthInDegrees = Math.abs(geoBounds.west - geoBounds.east)
+    const heightInDegrees = Math.abs(geoBounds.north - geoBounds.south)
     const aspectRatio = widthInDegrees / heightInDegrees
 
     const effectiveWidth = Math.min(

@@ -29,12 +29,7 @@ import SegmentedController, { TabActionType } from "./SegmentedController"
 
 const geoBoundsMemo: Record<string, GeoBounds> = {}
 const memoizedGeoBounds = (bounds: GeoBounds) => {
-  const key = [
-    bounds.leftLon,
-    bounds.rightLon,
-    bounds.upperLat,
-    bounds.lowerLat,
-  ].join("-")
+  const key = [bounds.west, bounds.east, bounds.north, bounds.south].join("-")
   if (!geoBoundsMemo.hasOwnProperty(key)) {
     geoBoundsMemo[key] = bounds
   }
@@ -51,8 +46,8 @@ const resolutionOptions = [
 ]
 
 const getOptimalResolutionForBounds = (bounds: GeoBounds) => {
-  const width = Math.abs(bounds.leftLon - bounds.rightLon)
-  const height = Math.abs(bounds.upperLat - bounds.lowerLat)
+  const width = Math.abs(bounds.west - bounds.east)
+  const height = Math.abs(bounds.north - bounds.south)
   const area = width * height
   if (area > 5) return resolutionOptions[0]
   if (area > 2.5) return resolutionOptions[1]
@@ -63,10 +58,10 @@ interface ActivityFilteringOptions {
   startDate: string
   endDate: string
   activityTypes: Array<ActivityType>
-  leftLon: number
-  rightLon: number
-  upperLat: number
-  lowerLat: number
+  west: number
+  east: number
+  north: number
+  south: number
 }
 interface VisualizationOptions extends GeoBounds {
   thickness: number
@@ -95,12 +90,12 @@ const optionsFromQueryParams = (() => {
     return {}
   }
   const params = new URLSearchParams(window.location.search)
-  const leftLon = params.get("leftLon")
-  const rightLon = params.get("rightLon")
-  const upperLat = params.get("upperLat")
-  const lowerLat = params.get("lowerLat")
+  const west = params.get("west")
+  const east = params.get("east")
+  const north = params.get("north")
+  const south = params.get("south")
   const hasCustomCoords =
-    leftLon != null && rightLon != null && upperLat != null && lowerLat != null
+    west != null && east != null && north != null && south != null
 
   return {
     startDate: params.get("startDate") ?? undefined,
@@ -113,10 +108,10 @@ const optionsFromQueryParams = (() => {
       | undefined,
     geoBounds: hasCustomCoords
       ? {
-          leftLon: Number(leftLon),
-          rightLon: Number(rightLon),
-          upperLat: Number(upperLat),
-          lowerLat: Number(lowerLat),
+          west: Number(west),
+          east: Number(east),
+          north: Number(north),
+          south: Number(south),
         }
       : null,
   }
@@ -136,10 +131,10 @@ const routesFilterer = (options: Partial<ActivityFilteringOptions>) => (
   // If user wants to use custom coords, filter using those
   route.waypoints.some(
     (waypoint) =>
-      (options.lowerLat == null || waypoint.lat > options.lowerLat) &&
-      (options.upperLat == null || waypoint.lat < options.upperLat) &&
-      (options.leftLon == null || waypoint.lon > options.leftLon) &&
-      (options.rightLon == null || waypoint.lon < options.rightLon)
+      (options.south == null || waypoint.lat > options.south) &&
+      (options.north == null || waypoint.lat < options.north) &&
+      (options.west == null || waypoint.lon > options.west) &&
+      (options.east == null || waypoint.lon < options.east)
   )
 
 export const CanvasCustomizer = ({ activities }: Props) => {
@@ -232,10 +227,10 @@ export const CanvasCustomizer = ({ activities }: Props) => {
 
   React.useEffect(() => {
     // Register virtual inputs for coordinate bounds
-    register("leftLon")
-    register("rightLon")
-    register("upperLat")
-    register("lowerLat")
+    register("west")
+    register("east")
+    register("north")
+    register("south")
   }, [])
 
   const values = watch()
@@ -248,10 +243,10 @@ export const CanvasCustomizer = ({ activities }: Props) => {
       values.endDate,
       // Need to turn array into a string so memoization works since identically-populated but distinct arrays won't pass the === test
       values.activityTypes.join("&"),
-      values.leftLon,
-      values.rightLon,
-      values.upperLat,
-      values.lowerLat,
+      values.west,
+      values.east,
+      values.north,
+      values.south,
     ]
   )
 
@@ -260,10 +255,10 @@ export const CanvasCustomizer = ({ activities }: Props) => {
     queryParams.set("startDate", values.startDate)
     queryParams.set("endDate", values.endDate)
     queryParams.set("activityTypes", values.activityTypes.join(","))
-    queryParams.set("leftLon", String(values.leftLon))
-    queryParams.set("rightLon", String(values.rightLon))
-    queryParams.set("upperLat", String(values.upperLat))
-    queryParams.set("lowerLat", String(values.lowerLat))
+    queryParams.set("west", String(values.west))
+    queryParams.set("east", String(values.east))
+    queryParams.set("north", String(values.north))
+    queryParams.set("south", String(values.south))
     const queryParamString = queryParams.toString()
     window.history.replaceState(null, "", `?${queryParamString}`)
   }
@@ -273,10 +268,10 @@ export const CanvasCustomizer = ({ activities }: Props) => {
     return {
       routes: routesToRender,
       geoBounds: memoizedGeoBounds({
-        leftLon: values.leftLon,
-        rightLon: values.rightLon,
-        upperLat: values.upperLat,
-        lowerLat: values.lowerLat,
+        west: values.west,
+        east: values.east,
+        north: values.north,
+        south: values.south,
       }),
       thickness: values.thickness,
       pathResolution: values.pathResolution,
@@ -286,10 +281,10 @@ export const CanvasCustomizer = ({ activities }: Props) => {
     }
   }, [
     routesToRender,
-    values.leftLon,
-    values.rightLon,
-    values.upperLat,
-    values.lowerLat,
+    values.west,
+    values.east,
+    values.north,
+    values.south,
     values.thickness,
     values.pathResolution,
     values.mapResolution,
@@ -302,15 +297,15 @@ export const CanvasCustomizer = ({ activities }: Props) => {
       _.debounce((bounds: GeoBounds) => {
         // Update the form value
         if (
-          bounds.leftLon !== values.leftLon ||
-          bounds.rightLon !== values.rightLon ||
-          bounds.upperLat !== values.upperLat ||
-          bounds.lowerLat !== values.lowerLat
+          bounds.west !== values.west ||
+          bounds.east !== values.east ||
+          bounds.north !== values.north ||
+          bounds.south !== values.south
         ) {
-          setValue("upperLat", bounds.upperLat)
-          setValue("lowerLat", bounds.lowerLat)
-          setValue("leftLon", bounds.leftLon)
-          setValue("rightLon", bounds.rightLon)
+          setValue("north", bounds.north)
+          setValue("south", bounds.south)
+          setValue("west", bounds.west)
+          setValue("east", bounds.east)
         }
         // Need to debounce this so the MapBox map doesn't overwhelm react-hook-form
       }, 500),
@@ -321,8 +316,8 @@ export const CanvasCustomizer = ({ activities }: Props) => {
     (bounds: GeoBounds) => {
       // Update the coordinate specification map
       coordinateBoundsMapRef.current?.fitBounds([
-        [bounds.leftLon, bounds.lowerLat],
-        [bounds.rightLon, bounds.upperLat],
+        [bounds.west, bounds.south],
+        [bounds.east, bounds.north],
       ])
     },
     [coordinateBoundsMapRef]

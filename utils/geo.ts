@@ -3,10 +3,10 @@ import { roundToPlaces } from "./math"
 
 // The whole globe -- this might be unsafe since it'll make a gigantic canvas...
 export const FALLBACK_GEO_BOUNDS: GeoBounds = {
-  leftLon: -180,
-  rightLon: 180,
-  upperLat: 90,
-  lowerLat: -90,
+  west: -180,
+  east: 180,
+  north: 90,
+  south: -90,
 }
 
 // Determine the GeoBounds that will contain all the routes with a small padding (5%)
@@ -36,10 +36,10 @@ export const getGeoBoundsForRoutes = (
 
   return somePointsExist
     ? {
-        leftLon: roundToPlaces(minLon - lonBuffer, 4),
-        rightLon: roundToPlaces(maxLon + lonBuffer, 4),
-        upperLat: roundToPlaces(maxLat + latBuffer, 4),
-        lowerLat: roundToPlaces(minLat - latBuffer, 4),
+        west: roundToPlaces(minLon - lonBuffer, 4),
+        east: roundToPlaces(maxLon + lonBuffer, 4),
+        north: roundToPlaces(maxLat + latBuffer, 4),
+        south: roundToPlaces(minLat - latBuffer, 4),
       }
     : null
 }

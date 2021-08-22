@@ -1,10 +1,10 @@
 import { ActivityType } from "./strava/enums"
 
 export interface GeoBounds {
-  leftLon: number
-  rightLon: number
-  upperLat: number
-  lowerLat: number
+  west: number
+  east: number
+  north: number
+  south: number
 }
 
 export interface Coords {
